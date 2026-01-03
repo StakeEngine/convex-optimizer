@@ -21,7 +21,7 @@ def get_log_normal_pdf(payouts, mode, std, scale):
     pdf /= pdf.sum()
     pdf_norm = []
     for p in pdf:
-        pdf_norm.append(p * scale)  # normalise safely
+        pdf_norm.append(p * scale)  # I dont like doing this
     return pdf_norm
 
 

@@ -49,6 +49,7 @@ def solve_optimizer(state: AppState):
         kl = cp.sum(cp.rel_entr(w, w0))
         smooth = cp.sum_squares(w[:-1] - w[1:])
 
+        # todo: create a better objective function
         obj = cp.Minimize(state.opt_settings[m].kl_divergence * kl + state.opt_settings[m].smoothness * smooth)
 
         cons = [

@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from src.class_setup.models import GaussianParams, LogNormalParams, ExponentialParams
+from src.class_setup.models import LogNormalParams
 
 
 class DistributionInput:
@@ -58,7 +58,6 @@ class CriteraParams:
     effective_pdf: list[float] = field(default_factory=list)
     plot_log_scale: bool = False
     dist_type: list[str] = field(default_factory=lambda: ["Log-Normal", "Gaussian", "Exponential"])
-    # dist_type: list = field(default_factory=list)
     num_dists = 1
     is_2_dist: bool = False
     dist_values: dict = field(default_factory=dict)
@@ -135,7 +134,6 @@ class AppState:
     opt_settings: list[ConvexOptSetup] = field(default_factory=list)
 
     # to do - assign these in gui
-    # excluded_payouts: list[int] = field(default_factory=int)
     win_step_size: float = field(default=0.1)
     excluded_payouts = [0]
     root_dir: str = "src"

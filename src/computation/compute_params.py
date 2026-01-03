@@ -154,7 +154,7 @@ def render_target_dist_params(state: AppState):
                     if c.dist_type[d] == "Log-Normal":
                         def_mode = 1.0
                         def_var = 0.1
-                        def_scale = 1.0
+                        def_scale = 1.0  # to do: put in a global scaling factor
                         if f"log_mode_{i}_{d}" in st.session_state:
                             def_mode = st.session_state[f"log_mode_{i}_{d}"]
                         if f"log_var_{i}_{d}" in st.session_state:
@@ -181,16 +181,16 @@ def render_target_dist_params(state: AppState):
                             on_change=reset_optimizer_and_merge,
                             args=(state,),
                         )
-                        dist_params.scale = st.slider(
-                            "Distribution Scale",
-                            0.1,
-                            10.0,
-                            def_scale,
-                            0.1,
-                            key=f"log_mu_{i}_{d}",
-                            on_change=reset_optimizer_and_merge,
-                            args=(state,),
-                        )
+                        # dist_params.scale = st.slider(
+                        #     "Distribution Scale",
+                        #     0.1,
+                        #     10.0,
+                        #     def_scale,
+                        #     0.1,
+                        #     key=f"log_mu_{i}_{d}",
+                        #     on_change=reset_optimizer_and_merge,
+                        #     args=(state,),
+                        # )
                         dist_params.mean = calculate_mu_from_mode(dist_params.mode, dist_params.std)
                         dist_params.the_exp = calculate_theoretical_expectation(dist_params.mode, dist_params.std)
 
@@ -230,16 +230,16 @@ def render_target_dist_params(state: AppState):
                             on_change=reset_optimizer_and_merge,
                             args=(state,),
                         )
-                        dist_params.scale = st.slider(
-                            "Distribution Scale",
-                            0.1,
-                            10.0,
-                            def_scale,
-                            0.1,
-                            key=f"gauss_mu_{i}_{d}",
-                            on_change=reset_optimizer_and_merge,
-                            args=(state,),
-                        )
+                        # dist_params.scale = st.slider(
+                        #     "Distribution Scale",
+                        #     0.1,
+                        #     10.0,
+                        #     def_scale,
+                        #     0.1,
+                        #     key=f"gauss_mu_{i}_{d}",
+                        #     on_change=reset_optimizer_and_merge,
+                        #     args=(state,),
+                        # )
                         ythe = get_gaussian_pdf(c.xthe, dist_params.mean, dist_params.std, 1.0 / c.hr)
                         yact = get_gaussian_pdf(c.xact, dist_params.mean, dist_params.std, 1.0 / c.hr)
 
@@ -260,16 +260,16 @@ def render_target_dist_params(state: AppState):
                             on_change=reset_optimizer_and_merge,
                             args=(state,),
                         )
-                        dist_params.scale = st.slider(
-                            "Distribution Scale",
-                            0.1,
-                            10.0,
-                            def_scale,
-                            0.1,
-                            key=f"exp_mu_{i}_{d}",
-                            on_change=reset_optimizer_and_merge,
-                            args=(state,),
-                        )
+                        # dist_params.scale = st.slider(
+                        #     "Distribution Scale",
+                        #     0.1,
+                        #     10.0,
+                        #     def_scale,
+                        #     0.1,
+                        #     key=f"exp_mu_{i}_{d}",
+                        #     on_change=reset_optimizer_and_merge,
+                        #     args=(state,),
+                        # )
 
                         ythe = get_exp_pdf(c.xthe, dist_params.power, 1.0 / c.hr)
                         yact = get_exp_pdf(c.xact, dist_params.power, 1.0 / c.hr)
