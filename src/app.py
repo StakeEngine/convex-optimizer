@@ -70,9 +70,6 @@ if state.optimization_success:
     if st.button("Merge Optimized Solutions"):
         state.merge_solutions = True
 
-if len(state.hr_ranges) > 0:
-    print_optimized_hr_table(state)
-
 if state.merge_solutions:
     merge_solutions(state)
     write_data = st.button("Write Lookup and HR Data")
@@ -82,6 +79,10 @@ if state.merge_solutions:
     write_raw_data = st.button("Save Complete Class Data")
     if write_raw_data:
         state.pickle_data = True
+
+if len(state.hr_ranges) > 0:
+    with st.expander("Final Hit-Rate Table"):
+        print_optimized_hr_table(state)
 
 if state.write_data:
     write_optimized_lookup(state)

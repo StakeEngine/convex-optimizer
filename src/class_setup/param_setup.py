@@ -22,24 +22,30 @@ def render_mode_editor(state: AppState):
 
     state.lookup_name = st.text_input("Lookup Table", key="lookupName", value=f"lookUpTable_{state.mode}.csv")
     state.segmented_name = st.text_input(
-        "Lookup Table", key="segmentedName", value=f"lookUpTableSegmented_{state.mode}.csv"
+        "Segmented Lookup Table", key="segmentedName", value=f"lookUpTableSegmented_{state.mode}.csv"
     )
 
     state.lut_file = str.join("/", [state.root_dir, state.in_dir, state.lookup_name])
     state.segmented_file = str.join("/", [state.root_dir, state.in_dir, state.segmented_name])
-    st.write(f"Target file: {state.lut_file}")
-    st.write((f"Target file: {state.segmented_file}"))
+    st.write(f"Target lookup file: {state.lut_file}")
+    st.write((f"Target segmented file: {state.segmented_file}"))
 
 
 def render_criteria_editor(state: AppState):
-    criteria_input = st.text_input("input criteria", width=200, value="basegame")
+    criteria_input = st.text_input(
+        "input criteria",
+        width=200,
+        value="basegame",
+        key="criteria_input",
+    )
 
     if st.button("Append", key="append_criteria", width=80):
-        if criteria_input and criteria_input and criteria_input not in state.criteria_list:
-            criteria_setup = CriteraParams(name=criteria_input)
-            state.criteria_list.append(criteria_setup)
-
-    # st.write([x for x in state.criteria_list])
+        name = criteria_input.strip().lower()
+        existing_names = {c.name.strip().lower() for c in state.criteria_list}
+        if name not in existing_names:
+            state.criteria_list.append(CriteraParams(name=name))
+        else:
+            st.warning("Criteria already exists")
 
 
 def render_criteria_params(state: AppState):
@@ -82,6 +88,7 @@ def render_criteria_params(state: AppState):
             state.dist_objects.append(
                 Distribution(criteria=criteria.name, rtp=criteria.rtp, hr=criteria.hr, av_win=criteria.av)
             )
+
             state.zero_prob -= 1.0 / criteria.hr
 
             st.success(

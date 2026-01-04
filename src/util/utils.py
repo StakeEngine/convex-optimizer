@@ -145,8 +145,8 @@ def write_optimized_lookup(state: AppState):
             hrwrite[str(r)] = hr
         f.write(json.dumps(hrwrite, indent=4))
 
-    state.merge_solutions = False
-    state.write_data = False
+    # state.merge_solutions = False
+    # state.write_data = False
     st.write("Write Successful.")
 
 
