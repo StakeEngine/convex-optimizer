@@ -124,7 +124,7 @@ def merge_solutions(state: AppState):
 
         for sim, pay in zip(state.dist_objects[i].book_ids, d.dist_values[0].xact):
             w = d.optimized_final_distribution[pay]
-            final_lookup.append((sim, w, pay))
+            final_lookup.append((sim, w, int(pay * 100)))
             sanity_rtp += pay * w
             cumulative_prob += w
         zero_ids -= set(state.dist_objects[i].book_ids)
@@ -142,8 +142,9 @@ def merge_solutions(state: AppState):
     contain.write(f"Zero-Weight: {state.zero_prob}")
 
     weight_array = [x[1] for x in sorted_lookup]
+    pay_array = [int(x[2] / 100) for x in sorted_lookup]
     final_weights = [int((2**state.weight_scale)) * w for w in weight_array]
 
-    state.hr_ranges = hit_rates_ranges(d.dist_values[0].xact, final_weights)
-
+    state.hr_ranges = hit_rates_ranges(pay_array, final_weights)
+    st.write()
     state.final_optimized_lookup = sorted_lookup

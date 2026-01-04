@@ -26,3 +26,6 @@ setup: packInstall
 	@echo "Virtual environment ready."
 	@echo "To activate it, run:"
 	@echo "$(ACTIVATE)"
+
+clean:
+	rm -rf env __pycache__ *.pyc
