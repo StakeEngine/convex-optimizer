@@ -12,7 +12,7 @@ def render_mode_editor(state: AppState):
     with cst:
         state.cost = st.number_input("Mode Cost:", value=1.0, width=100)
     with step:
-        state.win_step_size = st.number_input("Win Step Size", 0.0, 100.0, 0.1, width=80)
+        state.win_step_size = st.number_input("Win Step Size", 0.0, 100.0, 0.01, width=80)
 
     indir, outdir = st.columns(2)
     with indir:
@@ -57,7 +57,7 @@ def render_criteria_params(state: AppState):
             "RTP",
             key=f"rtp_{i}",
             value=criteria.rtp,
-            step=0.01,
+            step=0.001,
         )
 
         criteria.av = col2.number_input(
