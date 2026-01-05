@@ -5,10 +5,7 @@ from src.class_setup.state import (
     PlotSettings,
     ConvexOptSetup,
 )
-from src.util.utils import (
-    extract_ids,
-    get_uniuqe_payouts_from_lut,
-)
+from src.util.utils import extract_ids, read_csv, calculate_params
 from src.computation.math_functions import (
     calculate_theoretical_expectation,
     calculate_mu_from_mode,
@@ -49,20 +46,17 @@ def reset_optimizer_and_merge(state: AppState):
 def render_compute_params(state: AppState):
     summaryObj = SummaryGame(None, None)
 
-    remaining_sim_ids = set([i + state.book_offset for i in range(state.lookup_length)])
     for i, o in enumerate(state.dist_objects):
         # extract book ids
         if not o.book_ids:
-            o.book_ids, state.lookup_length, state.zero_ids = extract_ids(state, o.criteria, [0])
-            remaining_sim_ids -= set(o.book_ids)
+            o.book_ids, o.payouts, state.lookup_length, state.zero_ids = extract_ids(state, o.criteria, [0])
             if summaryObj.zero_id_len is None or summaryObj.lookup_length is None:
                 summaryObj.zero_id_len = len(state.zero_ids)
                 summaryObj.lookup_length = state.lookup_length
 
-            o.payouts = get_uniuqe_payouts_from_lut(state, o.book_ids)
             o.unique_payouts = sorted(list(set(o.payouts)))
 
-        if len(o.payouts) == 0 or len(o.book_ids) == 0:
+        if len(o.unique_payouts) == 0 or len(o.book_ids) == 0:
             st.error(f"ERROR: could not find book ids / payouts for criteria: {o.criteria}")
 
         summaryObj.mode_summary.append(SummaryModes(len(o.book_ids), len(o.unique_payouts)))
@@ -70,7 +64,19 @@ def render_compute_params(state: AppState):
         if len(state.log_normal_params) <= i:
             state.log_normal_params.append(LogNormalParams())
             state.plot_params.append(PlotSettings())
+
+    remaining_sim_ids = set([i + state.book_offset for i in range(state.lookup_length)])
+    for o in state.dist_objects:
+        remaining_sim_ids -= set(o.book_ids)
     remaining_sim_ids -= set(state.zero_ids)
+
+    if len(state.lut_file) > 0:
+        all_payout_ints = read_csv(state.lut_file)
+        state.disused_sims = list(remaining_sim_ids)
+        state.disused_int_payouts = [int(all_payout_ints[i - state.book_offset]) for i in list(remaining_sim_ids)]
+
+        st.write(state.disused_sims)
+        # st.write(state.disused_int_payouts)
 
     with st.expander("Game/Mode Split Summary"):
         st.write(
@@ -100,6 +106,8 @@ def merge_dist_pdf(pdf1, pdf2, mix_factor, criteria_scale=1.0):
 
 def render_target_dist_params(state: AppState):
     for i, c in enumerate(state.criteria_list):
+        if c.rtp is None or c.hr is None or c.av is None:
+            c.rtp, c.hr, c.av = calculate_params(c.rtp, c.hr, c.av, state.cost)
 
         dist_object = state.dist_objects[i]
         x = np.linspace(
@@ -108,8 +116,8 @@ def render_target_dist_params(state: AppState):
             int(max(dist_object.unique_payouts) / state.win_step_size),
         )
 
-        c.xthe = [round(y, 1) for y in x]
-        c.xact = [round(y, 1) for y in dist_object.unique_payouts]
+        c.xthe = [round(y, 2) for y in x]
+        c.xact = [round(y, 2) for y in dist_object.unique_payouts]
         with st.sidebar:
             if f"checkbox_{i}" not in st.session_state:
                 st.session_state[f"checkbox_{i}"] = c.is_2_dist

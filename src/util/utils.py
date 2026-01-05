@@ -8,6 +8,7 @@ from src.class_setup.models import LogNormalParams, GaussianParams, ExponentialP
 
 def extract_ids(state: AppState, target_string, exclustion_payouts):
     ids = []
+    pays = []
     exc_payouts = []
     zero_ids = []
     total_lookup_length = 0
@@ -22,7 +23,8 @@ def extract_ids(state: AppState, target_string, exclustion_payouts):
                 zero_ids.append(int(book))
             if criteria.lower() == target_string.lower() and (tot not in exc_payouts):
                 ids.append(int(book))
-    return ids, total_lookup_length, zero_ids
+                pays.append(tot)
+    return ids, pays, total_lookup_length, zero_ids
 
 
 def read_csv(fname):
@@ -146,7 +148,7 @@ def write_optimized_lookup(state: AppState):
         f.write(json.dumps(hrwrite, indent=4))
 
     # state.merge_solutions = False
-    # state.write_data = False
+    state.write_data = False
     st.write("Write Successful.")
 
 

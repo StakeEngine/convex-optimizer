@@ -109,7 +109,7 @@ def merge_solutions(state: AppState):
         d.optimized_unique_distribution = unique_weights
 
         unique_counter = {}
-        for p in d.dist_values[0].xact:
+        for p in state.dist_objects[i].payouts:
             unique_counter[p] = unique_counter.get(p, 0) + 1
 
         d.unique_payout_counter = unique_counter
@@ -122,7 +122,7 @@ def merge_solutions(state: AppState):
         sanity_rtp = 0.0
         cumulative_prob = 0.0
 
-        for sim, pay in zip(state.dist_objects[i].book_ids, d.dist_values[0].xact):
+        for sim, pay in zip(state.dist_objects[i].book_ids, state.dist_objects[i].payouts):
             w = d.optimized_final_distribution[pay]
             final_lookup.append((sim, w, int(pay * 100)))
             sanity_rtp += pay * w
@@ -138,13 +138,17 @@ def merge_solutions(state: AppState):
     for i in list(state.zero_ids):
         final_lookup.append((i, idv_zero_prob, 0))
 
+    # write disused sim numbers with zero-weight
+    for idx, j in enumerate(list(state.disused_sims)):
+        final_lookup.append((j, 0, state.disused_int_payouts[idx]))
+
     sorted_lookup = sorted(final_lookup, key=lambda x: x[0])
     contain.write(f"Zero-Weight: {state.zero_prob}")
 
     weight_array = [x[1] for x in sorted_lookup]
-    pay_array = [int(x[2] / 100) for x in sorted_lookup]
+    pay_array = [round(x[2] / 100, 2) for x in sorted_lookup]
     final_weights = [int((2**state.weight_scale)) * w for w in weight_array]
 
     state.hr_ranges = hit_rates_ranges(pay_array, final_weights)
-    st.write()
+
     state.final_optimized_lookup = sorted_lookup

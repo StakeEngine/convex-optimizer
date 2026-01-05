@@ -128,7 +128,7 @@ class AppState:
     pickle_data: bool = False
 
     lookup_name: str = ""
-    lookup_file: str = ""
+    lut_file: str = ""
     segmented_name: str = ""
     segmented_file: str = ""
     opt_settings: list[ConvexOptSetup] = field(default_factory=list)
@@ -136,6 +136,8 @@ class AppState:
     # to do - assign these in gui
     win_step_size: float = field(default=0.1)
     excluded_payouts = [0]
+    disused_sims: list[int] = field(default_factory=list)
+    disused_int_payouts: list[int] = field(default_factory=list)
     root_dir: str = "src"
     out_dir: str = "output_files"
     in_dir: str = "input_files"
