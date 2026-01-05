@@ -138,6 +138,10 @@ def merge_solutions(state: AppState):
     for i in list(state.zero_ids):
         final_lookup.append((i, idv_zero_prob, 0))
 
+    # write disused sim numbers with zero-weight
+    for idx, j in enumerate(list(state.disused_sims)):
+        final_lookup.append((j, 0, state.disused_int_payouts[idx]))
+
     sorted_lookup = sorted(final_lookup, key=lambda x: x[0])
     contain.write(f"Zero-Weight: {state.zero_prob}")
 
