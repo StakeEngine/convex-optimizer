@@ -75,9 +75,6 @@ def render_compute_params(state: AppState):
         state.disused_sims = list(remaining_sim_ids)
         state.disused_int_payouts = [int(all_payout_ints[i - state.book_offset]) for i in list(remaining_sim_ids)]
 
-        st.write(state.disused_sims)
-        # st.write(state.disused_int_payouts)
-
     with st.expander("Game/Mode Split Summary"):
         st.write(
             f"Game Info: \n\nLookup length: {summaryObj.lookup_length} \n\nNum Zero-IDs: {summaryObj.zero_id_len}"
