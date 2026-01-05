@@ -86,7 +86,6 @@ def render_compute_params(state: AppState):
     remaining_sim_ids -= set(state.zero_ids)
 
     if len(state.lut_file) > 0:
-        all_payout_ints = read_csv(state.lut_file)
         state.disused_sims = list(remaining_sim_ids)
         state.disused_int_payouts = [int(all_payout_ints[i - state.book_offset]) for i in list(remaining_sim_ids)]
 
