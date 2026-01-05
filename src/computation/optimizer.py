@@ -8,65 +8,74 @@ from src.util.utils import hit_rates_ranges
 
 def render_optimizer_settings(state: AppState):
     for j, s in enumerate(state.opt_settings):
-        with st.container(border=True):
-            st.write(f"Criteria: {state.criteria_list[j].name}")
-            s.smoothness = st.slider(
-                f"Distribution smoothness: {j}",
-                0.0,
-                100.0,
-                s.smoothness,
-                0.5,
-                key=f"set_smoothness_{j}",
-                on_change=reset_optimizer_and_merge,
-                args=(state,),
-            )
+        if len(state.criteria_list[j].xact) > 1:
+            with st.container(border=True):
+                st.write(f"Criteria: {state.criteria_list[j].name}")
+                s.smoothness = st.slider(
+                    f"Distribution smoothness: {j}",
+                    0.0,
+                    100.0,
+                    s.smoothness,
+                    0.5,
+                    key=f"set_smoothness_{j}",
+                    on_change=reset_optimizer_and_merge,
+                    args=(state,),
+                )
 
-            s.kl_divergence = st.slider(
-                f"KL Divergence weight: {j}",
-                0.1,
-                100.0,
-                s.kl_divergence,
-                0.1,
-                key=f"set_kl_divergence_{j}",
-                on_change=reset_optimizer_and_merge,
-                args=(state,),
-            )
+                s.kl_divergence = st.slider(
+                    f"KL Divergence weight: {j}",
+                    0.1,
+                    100.0,
+                    s.kl_divergence,
+                    0.1,
+                    key=f"set_kl_divergence_{j}",
+                    on_change=reset_optimizer_and_merge,
+                    args=(state,),
+                )
 
 
 def solve_optimizer(state: AppState):
     for m, c in enumerate(state.criteria_list):
-        if c.num_dists == 2:
-            w0 = np.array(c.merged_dist)
+        if len(c.xact) == 1:
+            c.solved_weights = c.yact
+            c.solution_metrics = {
+                "target_sum": c.solved_weights[0],
+                "actual_sum": c.solved_weights[0],
+                "rtp": float(c.xact[0] * c.solved_weights[0]) / state.cost,
+            }
         else:
-            w0 = np.array(c.dist_values[0].yact)
+            if c.num_dists == 2:
+                w0 = np.array(c.merged_dist)
+            else:
+                w0 = np.array(c.dist_values[0].yact)
 
-        eps = 1e-9
-        w0 = (w0 + eps) / (w0 + eps).sum()
+            eps = 1e-9
+            w0 = (w0 + eps) / (w0 + eps).sum()
 
-        n = len(c.xact)
-        w = cp.Variable(n)
+            n = len(c.xact)
+            w = cp.Variable(n)
 
-        kl = cp.sum(cp.rel_entr(w, w0))
-        smooth = cp.sum_squares(w[:-1] - w[1:])
+            kl = cp.sum(cp.rel_entr(w, w0))
+            smooth = cp.sum_squares(w[:-1] - w[1:])
 
-        # todo: create a better objective function
-        obj = cp.Minimize(state.opt_settings[m].kl_divergence * kl + state.opt_settings[m].smoothness * smooth)
+            # todo: create a better objective function
+            obj = cp.Minimize(state.opt_settings[m].kl_divergence * kl + state.opt_settings[m].smoothness * smooth)
 
-        cons = [
-            w >= 0,
-            cp.sum(w) == (1.0 / c.hr),
-            c.xact @ w == c.rtp,
-        ]
+            cons = [
+                w >= 0,
+                cp.sum(w) == (1.0 / c.hr),
+                c.xact @ w == c.rtp,
+            ]
 
-        cp.Problem(obj, cons).solve(verbose=True)
+            cp.Problem(obj, cons).solve(verbose=True)
 
-        c.solved_weights = w.value
-        c.solution_metrics = {
-            "target_sum": 1.0 / c.hr,
-            "actual_sum": float(np.sum(w.value)),
-            "rtp": float(c.xact @ w.value),
-        }
-        state.plot_params[m].show_solution = True
+            c.solved_weights = w.value
+            c.solution_metrics = {
+                "target_sum": 1.0 / c.hr,
+                "actual_sum": float(np.sum(w.value)),
+                "rtp": float(c.xact @ w.value),
+            }
+            state.plot_params[m].show_solution = True
 
     state.optimization_success = True
 
