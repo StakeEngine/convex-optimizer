@@ -100,7 +100,7 @@ def render_optimizer_results(state: AppState):
         for c in state.criteria_list:
             hr_json = {}
             for r, val in c.criteria_hr_dict.items():
-                hr_json[str(r)] = val
+                hr_json[str(r)] = round(val, 3)
             st.json(hr_json)
 
 
@@ -138,9 +138,12 @@ def merge_solutions(state: AppState):
             cumulative_prob += w
         zero_ids -= set(state.dist_objects[i].book_ids)
 
+        contain.write(
+            f"{d.name} [Output]:",
+        )
         contain.write(f"RTP after sim split: {round(sanity_rtp,5)}")
         contain.write(f"Hit-Rate after sim split: {round(1.0/cumulative_prob, 5)}")
-        contain.write(f"Expected Hit-Rate: {d.hr}")
+        contain.write(f"Expected Hit-Rate: {d.hr}\n\n***************")
 
     # get 0 wins
     idv_zero_prob = state.zero_prob / len(state.zero_ids)
@@ -152,7 +155,7 @@ def merge_solutions(state: AppState):
         final_lookup.append((j, 0, state.disused_int_payouts[idx]))
 
     sorted_lookup = sorted(final_lookup, key=lambda x: x[0])
-    contain.write(f"Zero-Weight: {state.zero_prob}")
+    contain.write(f"Zero-Weight: {round(state.zero_prob,4)}")
 
     weight_array = [x[1] for x in sorted_lookup]
     pay_array = [round(x[2] / 100, 2) for x in sorted_lookup]

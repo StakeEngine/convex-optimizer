@@ -157,7 +157,7 @@ def print_optimized_hr_table(state: AppState):
         print_hr = {}
         for raange, h in state.hr_ranges.items():
             st.write(f"{raange}: {h}")
-            print_hr[str(raange)] = round(h, 4)
+            print_hr[str(raange)] = round(h, 3)
 
 
 def save_mode_solution(state: AppState):
