@@ -46,15 +46,30 @@ def reset_optimizer_and_merge(state: AppState):
 def render_compute_params(state: AppState):
     summaryObj = SummaryGame(None, None)
 
+    max_payout_float = 0
+    if len(state.lut_file) > 0:
+        all_payout_ints = read_csv(state.lut_file)
+        max_payout_float = round(max(all_payout_ints) / 100, 2)
+
     for i, o in enumerate(state.dist_objects):
         # extract book ids
         if not o.book_ids:
-            o.book_ids, o.payouts, state.lookup_length, state.zero_ids = extract_ids(state, o.criteria, [0])
+            o.book_ids, o.payouts, state.lookup_length, state.zero_ids = extract_ids(
+                state,
+                o.criteria,
+                [0],
+                max_payout_float,
+            )
             if summaryObj.zero_id_len is None or summaryObj.lookup_length is None:
                 summaryObj.zero_id_len = len(state.zero_ids)
                 summaryObj.lookup_length = state.lookup_length
 
             o.unique_payouts = sorted(list(set(o.payouts)))
+            if len(o.unique_payouts) == 1:
+                with st.container():
+                    st.warning(
+                        "Criteria has 1 unique payout - distribution fits not avalaliable. \n\nProbabilty will be automatically assigned based on hit-rate and RTP contribution."
+                    )
 
         if len(o.unique_payouts) == 0 or len(o.book_ids) == 0:
             st.error(f"ERROR: could not find book ids / payouts for criteria: {o.criteria}")
@@ -103,7 +118,7 @@ def merge_dist_pdf(pdf1, pdf2, mix_factor, criteria_scale=1.0):
 
 def render_target_dist_params(state: AppState):
     for i, c in enumerate(state.criteria_list):
-        if c.rtp is None or c.hr is None or c.av is None:
+        if any([c.rtp is None, c.hr is None, c.av is None]):
             c.rtp, c.hr, c.av = calculate_params(c.rtp, c.hr, c.av, state.cost)
 
         dist_object = state.dist_objects[i]
@@ -116,188 +131,203 @@ def render_target_dist_params(state: AppState):
         c.xthe = [round(y, 2) for y in x]
         c.xact = [round(y, 2) for y in dist_object.unique_payouts]
         with st.sidebar:
-            if f"checkbox_{i}" not in st.session_state:
-                st.session_state[f"checkbox_{i}"] = c.is_2_dist
+            if len(state.dist_objects[i].unique_payouts) > 1:
+                if f"checkbox_{i}" not in st.session_state:
+                    st.session_state[f"checkbox_{i}"] = c.is_2_dist
 
-            c.is_2_dist = st.checkbox(
-                "Use 2 distribtuions",
-                key=f"checkbox_{i}",
-            )
-
-            if c.is_2_dist:
-                c.num_dists = 2
-                if f"dist1_mix_{i}" not in st.session_state:
-                    st.session_state[f"dist1_mix_{i}"] = c.dist1_mix
-
-                c.dist1_mix = st.number_input(
-                    "Dist 1 Weight Factor",
-                    0.0,
-                    1.0,
-                    key=f"dist1_mix_{i}",
+                c.is_2_dist = st.checkbox(
+                    "Use 2 distribtuions",
+                    key=f"checkbox_{i}",
                 )
-                c.dist2_mix = 1.0 - c.dist1_mix
+
+                if c.is_2_dist:
+                    c.num_dists = 2
+                    if f"dist1_mix_{i}" not in st.session_state:
+                        st.session_state[f"dist1_mix_{i}"] = c.dist1_mix
+
+                    c.dist1_mix = st.number_input(
+                        "Dist 1 Weight Factor",
+                        0.0,
+                        1.0,
+                        key=f"dist1_mix_{i}",
+                    )
+                    c.dist2_mix = 1.0 - c.dist1_mix
+                else:
+                    c.num_dists = 1
+
+                for d in range(c.num_dists):
+                    dist_type = st.radio(
+                        "Distribution Type",
+                        ["Log-Normal", "Gaussian", "Exponential"],
+                        key=f"dist_type_{i}_{d}",
+                        on_change=reset_optimizer_and_merge,
+                        args=(state,),
+                    )
+                    c.dist_type[d] = st.session_state[f"dist_type_{i}_{d}"]
+                    # change_dist_params(state, dist_type)
+                    dist_params = c.dist1_params
+                    if d == 1:
+                        dist_params = c.dist2_params
+
+                    ythe, yact = [], []
+                    with st.container(border=True):
+                        st.write(f"Criteria: {c.name}")
+                        if c.dist_type[d] == "Log-Normal":
+                            def_mode = 1.0
+                            def_var = 0.1
+                            def_scale = 1.0  # to do: put in a global scaling factor
+                            if f"log_mode_{i}_{d}" in st.session_state:
+                                def_mode = st.session_state[f"log_mode_{i}_{d}"]
+                            if f"log_var_{i}_{d}" in st.session_state:
+                                def_var = st.session_state[f"log_var_{i}_{d}"]
+                            if f"log_mu_{i}_{d}" in st.session_state:
+                                def_mean = st.session_state[f"log_mu_{i}_{d}"]
+                            dist_params.mode = st.number_input(
+                                "Distribution Mode",
+                                0.01 * state.cost,
+                                1000.0 * state.cost,
+                                def_mode,
+                                0.01 * state.cost,
+                                key=f"log_mode_{i}_{d}",
+                                on_change=reset_optimizer_and_merge,
+                                args=(state,),
+                            )  # label,min,max,start,imcrement
+                            dist_params.std = st.number_input(
+                                "Distribution Variance",
+                                0.01,
+                                100.0,
+                                def_var,
+                                0.01,
+                                key=f"log_var_{i}_{d}",
+                                on_change=reset_optimizer_and_merge,
+                                args=(state,),
+                            )
+                            # dist_params.scale = st.slider(
+                            #     "Distribution Scale",
+                            #     0.1,
+                            #     10.0,
+                            #     def_scale,
+                            #     0.1,
+                            #     key=f"log_mu_{i}_{d}",
+                            #     on_change=reset_optimizer_and_merge,
+                            #     args=(state,),
+                            # )
+                            dist_params.mean = calculate_mu_from_mode(dist_params.mode, dist_params.std)
+                            dist_params.the_exp = calculate_theoretical_expectation(
+                                dist_params.mode, dist_params.std
+                            )
+
+                            st.text(f"Target Mean: {round(dist_params.the_exp *(1.0 / c.hr) ,3)}")
+
+                            # compute the probability distribution
+                            ythe = get_log_normal_pdf(c.xthe, dist_params.mode, dist_params.std, 1.0 / c.hr)
+                            yact = get_log_normal_pdf(c.xact, dist_params.mode, dist_params.std, 1.0 / c.hr)
+
+                        elif c.dist_type[d] == "Gaussian":
+                            def_mean = state.cost
+                            def_std = 0.1
+                            def_scale = 1.0
+                            if f"gauss_mode_{i}_{d}" in st.session_state:
+                                def_mean = st.session_state[f"gauss_mode_{i}_{d}"]
+                            if f"gauss_var_{i}_{d}" in st.session_state:
+                                def_std = st.session_state[f"gauss_var_{i}_{d}"]
+                            if f"gauss_mu_{i}_{d}" in st.session_state:
+                                def_mean = st.session_state[f"gauss_mu_{i}_{d}"]
+                            dist_params.mean = st.number_input(
+                                "Distribution Mode",
+                                0.01 * state.cost,
+                                1000.0 * state.cost,
+                                def_mean,
+                                0.01 * state.cost,
+                                key=f"gauss_mode_{i}_{d}",
+                                on_change=reset_optimizer_and_merge,
+                                args=(state,),
+                            )
+                            dist_params.std = st.number_input(
+                                "Distribution Standard Deviation",
+                                0.01,
+                                1000.0,
+                                def_std,
+                                0.01,
+                                key=f"gauss_var_{i}_{d}",
+                                on_change=reset_optimizer_and_merge,
+                                args=(state,),
+                            )
+                            # dist_params.scale = st.slider(
+                            #     "Distribution Scale",
+                            #     0.1,
+                            #     10.0,
+                            #     def_scale,
+                            #     0.1,
+                            #     key=f"gauss_mu_{i}_{d}",
+                            #     on_change=reset_optimizer_and_merge,
+                            #     args=(state,),
+                            # )
+                            ythe = get_gaussian_pdf(c.xthe, dist_params.mean, dist_params.std, 1.0 / c.hr)
+                            yact = get_gaussian_pdf(c.xact, dist_params.mean, dist_params.std, 1.0 / c.hr)
+
+                        elif c.dist_type[d] == "Exponential":
+                            def_power = 1.0
+                            def_scale = 1.0
+                            if f"exp_mode_{i}_{d}" in st.session_state:
+                                def_power = st.session_state[f"exp_mode_{i}_{d}"]
+                            if f"exp_mu_{i}_{d}" in st.session_state:
+                                def_mean = st.session_state[f"exp_mu_{i}_{d}"]
+                            dist_params.power = st.number_input(
+                                "Exponential Power",
+                                0.01,
+                                10.0,
+                                def_power,
+                                0.01,
+                                key=f"exp_mode_{i}_{d}",
+                                on_change=reset_optimizer_and_merge,
+                                args=(state,),
+                            )
+                            # dist_params.scale = st.slider(
+                            #     "Distribution Scale",
+                            #     0.1,
+                            #     10.0,
+                            #     def_scale,
+                            #     0.1,
+                            #     key=f"exp_mu_{i}_{d}",
+                            #     on_change=reset_optimizer_and_merge,
+                            #     args=(state,),
+                            # )
+
+                            ythe = get_exp_pdf(c.xthe, dist_params.power, 1.0 / c.hr)
+                            yact = get_exp_pdf(c.xact, dist_params.power, 1.0 / c.hr)
+
+                    if d == 0:
+                        c.dist1_params = dist_params
+                    elif d == 1:
+                        c.dist2_params = dist_params
+
+                    c.dist_values[d] = DistributionInput(dist_type, c.xthe, c.xact, ythe, yact)
+                # mix stuff here
+                if c.num_dists == 1:
+                    c.effective_rtp, c.effective_pdf = calculate_act_expectation(
+                        c.xact, c.dist_values[0].yact, state.cost
+                    )
+                elif c.num_dists == 2:
+                    ymergedact = merge_dist_pdf(
+                        c.dist_values[0].yact, c.dist_values[1].yact, c.dist1_mix, 1.0 / c.hr
+                    )
+                    ymergedthe = merge_dist_pdf(
+                        c.dist_values[0].ythe, c.dist_values[1].ythe, c.dist1_mix, 1.0 / c.hr
+                    )
+
+                    c.effective_rtp, c.effective_pdf = calculate_act_expectation(c.xact, ymergedact, state.cost)
+                    c.merged_dist = ymergedact
+                    c.merged_dist_the = ymergedthe
+
+                st.write(f"Actual Effective RTP Target: {round((1.0/c.hr) * c.effective_rtp,5)}")
             else:
-                c.num_dists = 1
-
-            for d in range(c.num_dists):
-                dist_type = st.radio(
-                    "Distribution Type",
-                    ["Log-Normal", "Gaussian", "Exponential"],
-                    key=f"dist_type_{i}_{d}",
-                    on_change=reset_optimizer_and_merge,
-                    args=(state,),
+                st.write(
+                    f"Criteria [{c.name}] has only 1 average win amount [{state.dist_objects[i].unique_payouts[0]}]"
                 )
-                c.dist_type[d] = st.session_state[f"dist_type_{i}_{d}"]
-                # change_dist_params(state, dist_type)
-                dist_params = c.dist1_params
-                if d == 1:
-                    dist_params = c.dist2_params
+                prob = (1.0 / c.hr) / state.cost
+                c.dist_values[0] = DistributionInput("fixed_amt", [c.av], [c.av], prob, prob)
+                c.yact, c.ythe = [prob], [prob]
 
-                ythe, yact = [], []
-                with st.container(border=True):
-                    st.write(f"Criteria: {c.name}")
-                    if c.dist_type[d] == "Log-Normal":
-                        def_mode = 1.0
-                        def_var = 0.1
-                        def_scale = 1.0  # to do: put in a global scaling factor
-                        if f"log_mode_{i}_{d}" in st.session_state:
-                            def_mode = st.session_state[f"log_mode_{i}_{d}"]
-                        if f"log_var_{i}_{d}" in st.session_state:
-                            def_var = st.session_state[f"log_var_{i}_{d}"]
-                        if f"log_mu_{i}_{d}" in st.session_state:
-                            def_mean = st.session_state[f"log_mu_{i}_{d}"]
-                        dist_params.mode = st.number_input(
-                            "Distribution Mode",
-                            0.01 * state.cost,
-                            1000.0 * state.cost,
-                            def_mode,
-                            0.01 * state.cost,
-                            key=f"log_mode_{i}_{d}",
-                            on_change=reset_optimizer_and_merge,
-                            args=(state,),
-                        )  # label,min,max,start,imcrement
-                        dist_params.std = st.number_input(
-                            "Distribution Variance",
-                            0.01,
-                            100.0,
-                            def_var,
-                            0.01,
-                            key=f"log_var_{i}_{d}",
-                            on_change=reset_optimizer_and_merge,
-                            args=(state,),
-                        )
-                        # dist_params.scale = st.slider(
-                        #     "Distribution Scale",
-                        #     0.1,
-                        #     10.0,
-                        #     def_scale,
-                        #     0.1,
-                        #     key=f"log_mu_{i}_{d}",
-                        #     on_change=reset_optimizer_and_merge,
-                        #     args=(state,),
-                        # )
-                        dist_params.mean = calculate_mu_from_mode(dist_params.mode, dist_params.std)
-                        dist_params.the_exp = calculate_theoretical_expectation(dist_params.mode, dist_params.std)
-
-                        st.text(f"Target Mean: {round(dist_params.the_exp *(1.0 / c.hr) ,3)}")
-
-                        # compute the probability distribution
-                        ythe = get_log_normal_pdf(c.xthe, dist_params.mode, dist_params.std, 1.0 / c.hr)
-                        yact = get_log_normal_pdf(c.xact, dist_params.mode, dist_params.std, 1.0 / c.hr)
-
-                    elif c.dist_type[d] == "Gaussian":
-                        def_mean = state.cost
-                        def_std = 0.1
-                        def_scale = 1.0
-                        if f"gauss_mode_{i}_{d}" in st.session_state:
-                            def_mean = st.session_state[f"gauss_mode_{i}_{d}"]
-                        if f"gauss_var_{i}_{d}" in st.session_state:
-                            def_std = st.session_state[f"gauss_var_{i}_{d}"]
-                        if f"gauss_mu_{i}_{d}" in st.session_state:
-                            def_mean = st.session_state[f"gauss_mu_{i}_{d}"]
-                        dist_params.mean = st.number_input(
-                            "Distribution Mode",
-                            0.01 * state.cost,
-                            1000.0 * state.cost,
-                            def_mean,
-                            0.01 * state.cost,
-                            key=f"gauss_mode_{i}_{d}",
-                            on_change=reset_optimizer_and_merge,
-                            args=(state,),
-                        )
-                        dist_params.std = st.number_input(
-                            "Distribution Standard Deviation",
-                            0.01,
-                            1000.0,
-                            def_std,
-                            0.01,
-                            key=f"gauss_var_{i}_{d}",
-                            on_change=reset_optimizer_and_merge,
-                            args=(state,),
-                        )
-                        # dist_params.scale = st.slider(
-                        #     "Distribution Scale",
-                        #     0.1,
-                        #     10.0,
-                        #     def_scale,
-                        #     0.1,
-                        #     key=f"gauss_mu_{i}_{d}",
-                        #     on_change=reset_optimizer_and_merge,
-                        #     args=(state,),
-                        # )
-                        ythe = get_gaussian_pdf(c.xthe, dist_params.mean, dist_params.std, 1.0 / c.hr)
-                        yact = get_gaussian_pdf(c.xact, dist_params.mean, dist_params.std, 1.0 / c.hr)
-
-                    elif c.dist_type[d] == "Exponential":
-                        def_power = 1.0
-                        def_scale = 1.0
-                        if f"exp_mode_{i}_{d}" in st.session_state:
-                            def_power = st.session_state[f"exp_mode_{i}_{d}"]
-                        if f"exp_mu_{i}_{d}" in st.session_state:
-                            def_mean = st.session_state[f"exp_mu_{i}_{d}"]
-                        dist_params.power = st.number_input(
-                            "Exponential Power",
-                            0.01,
-                            10.0,
-                            def_power,
-                            0.01,
-                            key=f"exp_mode_{i}_{d}",
-                            on_change=reset_optimizer_and_merge,
-                            args=(state,),
-                        )
-                        # dist_params.scale = st.slider(
-                        #     "Distribution Scale",
-                        #     0.1,
-                        #     10.0,
-                        #     def_scale,
-                        #     0.1,
-                        #     key=f"exp_mu_{i}_{d}",
-                        #     on_change=reset_optimizer_and_merge,
-                        #     args=(state,),
-                        # )
-
-                        ythe = get_exp_pdf(c.xthe, dist_params.power, 1.0 / c.hr)
-                        yact = get_exp_pdf(c.xact, dist_params.power, 1.0 / c.hr)
-
-                if d == 0:
-                    c.dist1_params = dist_params
-                elif d == 1:
-                    c.dist2_params = dist_params
-
-                c.dist_values[d] = DistributionInput(dist_type, c.xthe, c.xact, ythe, yact)
-            # mix stuff here
-            if c.num_dists == 1:
-                c.effective_rtp, c.effective_pdf = calculate_act_expectation(
-                    c.xact, c.dist_values[0].yact, state.cost
-                )
-            elif c.num_dists == 2:
-                ymergedact = merge_dist_pdf(c.dist_values[0].yact, c.dist_values[1].yact, c.dist1_mix, 1.0 / c.hr)
-                ymergedthe = merge_dist_pdf(c.dist_values[0].ythe, c.dist_values[1].ythe, c.dist1_mix, 1.0 / c.hr)
-
-                c.effective_rtp, c.effective_pdf = calculate_act_expectation(c.xact, ymergedact, state.cost)
-                c.merged_dist = ymergedact
-                c.merged_dist_the = ymergedthe
-
-            st.write(f"Actual Effective RTP Target: {round((1.0/c.hr) * c.effective_rtp,5)}")
         if len(state.opt_settings) <= i:
             state.opt_settings.append(ConvexOptSetup(1.0, 1.0, c.xact, list(np.ones(len(x)))))

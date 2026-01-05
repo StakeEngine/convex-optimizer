@@ -6,7 +6,7 @@ from src.class_setup.state import AppState, ModeData, CriteraParams
 from src.class_setup.models import LogNormalParams, GaussianParams, ExponentialParams
 
 
-def extract_ids(state: AppState, target_string, exclustion_payouts):
+def extract_ids(state: AppState, target_string, exclustion_payouts, max_payout):
     ids = []
     pays = []
     exc_payouts = []
@@ -18,7 +18,7 @@ def extract_ids(state: AppState, target_string, exclustion_payouts):
         for line in f:
             total_lookup_length += 1
             book, criteria, a, b = line.strip().split(",")
-            tot = round(float(a) + float(b), 2)
+            tot = min(round(float(a) + float(b), 2), max_payout)
             if tot == 0:
                 zero_ids.append(int(book))
             if criteria.lower() == target_string.lower() and (tot not in exc_payouts):
@@ -250,7 +250,5 @@ def load_mode_solution(state: AppState, mode: str, soln: int):
             elif dist_type == "Exponential":
                 st.session_state[f"exp_mode_{i}_{d}"] = params.power
                 st.session_state[f"exp_mu_{i}_{d}"] = params.scale
-            else:
-                raise RuntimeError
 
     st.rerun()
