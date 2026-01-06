@@ -47,9 +47,15 @@ def render_compute_params(state: AppState):
     summaryObj = SummaryGame(None, None)
 
     max_payout_float = 0
-    if len(state.lut_file) > 0:
+    all_payout_ints = []
+    if len(state.lut_file) > 0 and not (state.lut_read_complete):
         all_payout_ints = read_csv(state.lut_file)
         max_payout_float = round(max(all_payout_ints) / 100, 2)
+        state.lut_read_complete = True
+
+    exclude_payouts = []
+    if state.auto_assign_zero_hr:
+        exclude_payouts = [0]
 
     for i, o in enumerate(state.dist_objects):
         # extract book ids
@@ -57,7 +63,7 @@ def render_compute_params(state: AppState):
             o.book_ids, o.payouts, state.lookup_length, state.zero_ids = extract_ids(
                 state,
                 o.criteria,
-                [0],
+                exclude_payouts,
                 max_payout_float,
             )
             if summaryObj.zero_id_len is None or summaryObj.lookup_length is None:

@@ -49,6 +49,9 @@ def render_criteria_editor(state: AppState):
 
 
 def render_criteria_params(state: AppState):
+    if "0" in [c.name for c in state.criteria_list]:
+        state.auto_assign_zero_hr = False
+
     for i, criteria in enumerate(state.criteria_list):
 
         col1, col2, col3 = st.columns(3)
@@ -78,18 +81,26 @@ def render_criteria_params(state: AppState):
             f"Compute missing value for '{criteria.name}'",
             key=f"compute_{i}",
         ):
-            for nme, val in zip(("hr", "av", "rtp"), (criteria.hr, criteria.av, criteria.rtp)):
-                if val is None:
-                    setattr(criteria, nme, val)
+            if criteria.name == "0":
+                st.write("zero criteria specified")
+                criteria.rtp = 0
+                criteria.av = 0
+                if criteria.hr is None:
+                    st.error("Must define a hit-rate for zero-win criteria")
+                state.zero_prob = 1.0 / criteria.hr
+            else:
+                for nme, val in zip(("hr", "av", "rtp"), (criteria.hr, criteria.av, criteria.rtp)):
+                    if val is None:
+                        setattr(criteria, nme, val)
 
-            criteria.rtp, criteria.hr, criteria.av = calculate_params(
-                criteria.rtp, criteria.hr, criteria.av, state.cost
-            )
-            state.dist_objects.append(
-                Distribution(criteria=criteria.name, rtp=criteria.rtp, hr=criteria.hr, av_win=criteria.av)
-            )
-
-            state.zero_prob -= 1.0 / criteria.hr
+                criteria.rtp, criteria.hr, criteria.av = calculate_params(
+                    criteria.rtp, criteria.hr, criteria.av, state.cost
+                )
+                state.dist_objects.append(
+                    Distribution(criteria=criteria.name, rtp=criteria.rtp, hr=criteria.hr, av_win=criteria.av)
+                )
+                if state.auto_assign_zero_hr:
+                    state.zero_prob -= 1.0 / criteria.hr
 
             st.success(
                 f"Solved missing value for '{criteria.name}'\n RTP:{criteria.rtp}, Av Win: {criteria.av}, hr: {criteria.hr}"

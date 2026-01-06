@@ -1,6 +1,7 @@
 import streamlit as st
 import numpy as np
 import cvxpy as cp
+import warnings
 from src.class_setup.state import AppState
 from src.computation.compute_params import reset_optimizer_and_merge
 from src.util.utils import hit_rates_ranges
@@ -126,7 +127,9 @@ def merge_solutions(state: AppState):
 
         d.optimized_final_distribution = {}
         for p, w in unique_weights.items():
-            d.optimized_final_distribution[p] = w * (1.0 / unique_counter[p])
+            if w < 0:
+                warnings.warn(f"poor weight fit for {p} - {w}")
+            d.optimized_final_distribution[p] = max(w * (1.0 / unique_counter[p]), 0)
 
         sanity_rtp = 0.0
         cumulative_prob = 0.0

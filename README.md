@@ -1,6 +1,6 @@
 ## Installation Instructions
 
-run `make install` to execute setup using the Makefile
+run `make setup` to execute setup using the Makefile
 
 
 ## About 

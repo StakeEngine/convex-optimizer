@@ -19,11 +19,14 @@ def extract_ids(state: AppState, target_string, exclustion_payouts, max_payout):
             total_lookup_length += 1
             book, criteria, a, b = line.strip().split(",")
             tot = min(round(float(a) + float(b), 2), max_payout)
-            if tot == 0:
-                zero_ids.append(int(book))
-            if criteria.lower() == target_string.lower() and (tot not in exc_payouts):
+            if (criteria.lower() == target_string.lower()) or (
+                isinstance(criteria, int) and not state.auto_assign_zero_hr and tot == 0.0
+            ):
                 ids.append(int(book))
                 pays.append(tot)
+            elif state.auto_assign_zero_hr and tot == 0:
+                zero_ids.append(int(book))
+
     return ids, pays, total_lookup_length, zero_ids
 
 

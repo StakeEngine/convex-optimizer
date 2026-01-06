@@ -126,12 +126,14 @@ class AppState:
     optimization_success: bool = False
     write_data: bool = False
     pickle_data: bool = False
+    auto_assign_zero_hr: bool = True
 
     lookup_name: str = ""
     lut_file: str = ""
     segmented_name: str = ""
     segmented_file: str = ""
     opt_settings: list[ConvexOptSetup] = field(default_factory=list)
+    lut_read_complete: bool = field(default=False)
 
     # to do - assign these in gui
     win_step_size: float = field(default=0.1)
