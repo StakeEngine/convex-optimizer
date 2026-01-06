@@ -38,15 +38,15 @@ with st.container(border=True):
     render_criteria_editor(state)
     render_criteria_params(state)
 
-with st.container(border=True):
-    render_compute_params(state)
-
 
 st.subheader("Compute Parameters")
 if st.button("Set Criteria Params"):
     state.set_params = True
 
 if state.set_params:
+    with st.container(border=True):
+        render_compute_params(state)
+
     with st.container(border=True):
         render_target_dist_params(state)
 

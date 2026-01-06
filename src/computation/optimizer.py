@@ -108,8 +108,6 @@ def render_optimizer_results(state: AppState):
 def merge_solutions(state: AppState):
     criteria_prob = {}
     final_lookup = []
-    zero_ids = set([i + state.book_offset for i in range(state.lookup_length)])  # assume zero index, fix this
-
     contain = st.container(border=True)
     for i, d in enumerate(state.criteria_list):
 
@@ -139,7 +137,6 @@ def merge_solutions(state: AppState):
             final_lookup.append((sim, w, int(pay * 100)))
             sanity_rtp += pay * w
             cumulative_prob += w
-        zero_ids -= set(state.dist_objects[i].book_ids)
 
         contain.write(
             f"{d.name} [Output]:",

@@ -52,67 +52,83 @@ def render_criteria_editor(state: AppState):
             st.warning("Criteria already exists")
 
 
+def ensure_criteria_state(criteria, i):
+    for name, default in [("rtp", None), ("av", None), ("hr", None)]:
+        key = f"{name}_{i}"
+        if key not in st.session_state:
+            st.session_state[key] = getattr(criteria, name)
+
+
+def compute_missing(i: int, state: AppState, rtp, hr, av):
+    criteria = state.criteria_list[i]
+
+    rtp, hr, av = calculate_params(
+        rtp,
+        hr,
+        av,
+        state.cost,
+    )
+
+    st.session_state[f"rtp_{i}"] = rtp
+    st.session_state[f"hr_{i}"] = hr
+    st.session_state[f"av_{i}"] = av
+
+    criteria.rtp = rtp
+    criteria.hr = hr
+    criteria.av = av
+
+    st.session_state[f"computed_{i}"] = True
+
+
 def render_criteria_params(state: AppState):
-    if "0" in [c.name for c in state.criteria_list]:
-        state.auto_assign_zero_hr = False
 
     for i, criteria in enumerate(state.criteria_list):
+        ensure_criteria_state(criteria, i)
 
         col1, col2, col3 = st.columns(3)
 
-        criteria.rtp = col1.number_input(
+        col1.number_input(
             "RTP",
             key=f"rtp_{i}",
-            value=criteria.rtp,
+            value=st.session_state.get(f"rtp_{i}", criteria.rtp),
             step=0.001,
         )
 
-        criteria.av = col2.number_input(
+        col2.number_input(
             "Avg Win",
             key=f"av_{i}",
-            value=criteria.av,
+            value=st.session_state.get(f"av_{i}", criteria.av),
             step=0.01,
         )
 
-        criteria.hr = col3.number_input(
+        col3.number_input(
             "Hit Rate",
             key=f"hr_{i}",
-            value=criteria.hr,
+            value=st.session_state.get(f"hr_{i}", criteria.hr),
             step=0.01,
         )
 
         if st.button(
             f"Compute missing value for '{criteria.name}'",
             key=f"compute_{i}",
+            on_click=compute_missing,
+            args=(
+                i,
+                state,
+                st.session_state.get(f"rtp_{i}", criteria.rtp),
+                st.session_state.get(f"hr_{i}", criteria.hr),
+                st.session_state.get(f"av_{i}", criteria.av),
+            ),
         ):
-            if criteria.name == "0":
-                st.write("zero criteria specified")
-                criteria.rtp = 0
-                criteria.av = 0
-                if criteria.hr is None:
-                    st.error("Must define a hit-rate for zero-win criteria")
-                state.zero_prob = 1.0 / criteria.hr
-            else:
-                for nme, val in zip(("hr", "av", "rtp"), (criteria.hr, criteria.av, criteria.rtp)):
-                    if val is None:
-                        setattr(criteria, nme, val)
 
-                criteria.rtp, criteria.hr, criteria.av = calculate_params(
-                    criteria.rtp, criteria.hr, criteria.av, state.cost
-                )
-                state.dist_objects.append(
-                    Distribution(criteria=criteria.name, rtp=criteria.rtp, hr=criteria.hr, av_win=criteria.av)
-                )
-                if state.auto_assign_zero_hr:
-                    state.zero_prob -= 1.0 / criteria.hr
-
-            st.success(
-                f"Solved missing value for '{criteria.name}'\n RTP:{criteria.rtp}, Av Win: {criteria.av}, hr: {criteria.hr}"
+            state.dist_objects.append(
+                Distribution(criteria=criteria.name, rtp=criteria.rtp, hr=criteria.hr, av_win=criteria.av)
             )
 
-        state.criteria_list[i].auto_solve_zero_criteria = st.checkbox(
-            "Auto-assign 0-wins", True, key="criteria_auto_assign_{i}"
-        )
+            st.success(
+                f"Solved missing value for '{criteria.name}'\n RTP:{criteria.rtp}, Av Win: {criteria.av}, hr: {criteria.hr}",
+            )
+
         state.criteria_list[i].plot_log_scale = st.checkbox(
             f"Plot semi log-scale (x) for {state.criteria_list[i].name}", key=f"plot_log_scale_{i}"
         )

@@ -53,7 +53,6 @@ class CriteraParams:
     optimized_final_distribution: dict = field(default_factory=dict)
     solution_metrics: dict = field(default_factory=dict)
     criteria_hr_dict: dict = field(default_factory=dict)
-    auto_solve_zero_criteria: bool = True
 
     effective_rtp: float = 0.0
     effective_pdf: list[float] = field(default_factory=list)
@@ -112,6 +111,7 @@ class AppState:
     log_normal_params: list[LogNormalParams] = field(default_factory=list)
     plot_params: list[PlotSettings] = field(default_factory=list)
     zero_ids: list[int] = field(default_factory=list)
+    mode_contains_zero_criteria: bool = True
     all_payout_ints: list[int] = field(default_factory=list)
     zero_prob: float = 1.0
     lookup_length: int = 0
@@ -129,8 +129,6 @@ class AppState:
     optimization_success: bool = False
     write_data: bool = False
     pickle_data: bool = False
-    auto_assign_zero_hr: bool = True
-    mode_contains_zero_criteria: bool = True
 
     lookup_name: str = ""
     lut_file: str = ""
