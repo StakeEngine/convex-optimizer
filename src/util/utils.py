@@ -6,24 +6,23 @@ from src.class_setup.state import AppState, ModeData, CriteraParams
 from src.class_setup.models import LogNormalParams, GaussianParams, ExponentialParams
 
 
-def extract_ids(state: AppState, target_string, exclustion_payouts, max_payout):
+def extract_ids(state: AppState, target_string):
     ids = []
     pays = []
-    exc_payouts = []
     zero_ids = []
     total_lookup_length = 0
-    for p in exclustion_payouts:
-        exc_payouts.append(int(p) * 100)
     with open(state.segmented_file, "r", encoding="utf-8") as f:
         for line in f:
             total_lookup_length += 1
             book, criteria, a, b = line.strip().split(",")
-            tot = min(round(float(a) + float(b), 2), max_payout)
-            if tot == 0:
-                zero_ids.append(int(book))
-            if criteria.lower() == target_string.lower() and (tot not in exc_payouts):
+            criteria = str(criteria)
+            tot = min(round(float(a) + float(b), 2), state.max_payout)
+            if (criteria.lower() == target_string.lower()) or (tot == 0 and not state.mode_contains_zero_criteria):
                 ids.append(int(book))
                 pays.append(tot)
+            elif tot == 0 and state.mode_contains_zero_criteria:
+                zero_ids.append(int(book))
+
     return ids, pays, total_lookup_length, zero_ids
 
 
@@ -98,15 +97,13 @@ def hit_rates_ranges(payouts, weights):
 
 
 def calculate_params(rtp, hr, av_win, cost):
-    lst = [rtp, hr, av_win]
-    assert sum([1 for x in lst if x is None]) == 1
-
-    if rtp is None:
-        rtp = (cost * av_win) / hr
-    elif hr is None:
-        hr = (av_win * cost) / rtp
-    elif av_win is None:
-        av_win = (rtp * hr) / cost
+    if [rtp, hr, av_win].count(None) == 1:
+        if rtp is None:
+            rtp = (cost * av_win) / hr
+        elif hr is None:
+            hr = (av_win * cost) / rtp
+        elif av_win is None:
+            av_win = (rtp * hr) / cost
 
     return rtp, hr, av_win
 

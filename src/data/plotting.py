@@ -7,7 +7,8 @@ def render_plots(state: AppState, containter):
     colours = ["blue", "purple"]
     if state.set_params:
         for i, c in enumerate(state.criteria_list):
-            if len(c.xact) > 1:
+            if len(c.xact) > 10:  # look at why there is sometimes a 0 win for set win amount
+                # st.write(c.xact)
                 plot_params = state.plot_params[i]
                 xmin_disp, xmax_disp = containter.columns(2)
                 plot_params.xmin = xmin_disp.number_input(

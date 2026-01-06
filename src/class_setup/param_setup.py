@@ -6,13 +6,15 @@ from src.util.utils import calculate_params
 
 def render_mode_editor(state: AppState):
 
-    mde, cst, step = st.columns(3)
+    mde, cst, step, zero_criteria = st.columns(4)
     with mde:
         state.mode = st.text_input("Game Mode", key="gmode", value="base", width=150)
     with cst:
         state.cost = st.number_input("Mode Cost:", value=1.0, width=100)
     with step:
         state.win_step_size = st.number_input("Win Step Size", 0.0, 100.0, 0.01, width=80)
+    with zero_criteria:
+        state.mode_contains_zero_criteria = st.checkbox("'0' Criteria?", True, "contains_zero_criteria")
 
     indir, outdir = st.columns(2)
     with indir:
@@ -32,11 +34,13 @@ def render_mode_editor(state: AppState):
 
 
 def render_criteria_editor(state: AppState):
-    criteria_input = st.text_input(
-        "input criteria",
-        width=200,
-        value="basegame",
-        key="criteria_input",
+    criteria_input = str(
+        st.text_input(
+            "input criteria",
+            width=200,
+            value="basegame",
+            key="criteria_input",
+        )
     )
 
     if st.button("Append", key="append_criteria", width=80):
@@ -48,52 +52,83 @@ def render_criteria_editor(state: AppState):
             st.warning("Criteria already exists")
 
 
+def ensure_criteria_state(criteria, i):
+    for name, default in [("rtp", None), ("av", None), ("hr", None)]:
+        key = f"{name}_{i}"
+        if key not in st.session_state:
+            st.session_state[key] = getattr(criteria, name)
+
+
+def compute_missing(i: int, state: AppState, rtp, hr, av):
+    criteria = state.criteria_list[i]
+
+    rtp, hr, av = calculate_params(
+        rtp,
+        hr,
+        av,
+        state.cost,
+    )
+
+    st.session_state[f"rtp_{i}"] = rtp
+    st.session_state[f"hr_{i}"] = hr
+    st.session_state[f"av_{i}"] = av
+
+    criteria.rtp = rtp
+    criteria.hr = hr
+    criteria.av = av
+
+    st.session_state[f"computed_{i}"] = True
+
+
 def render_criteria_params(state: AppState):
+
     for i, criteria in enumerate(state.criteria_list):
+        ensure_criteria_state(criteria, i)
 
         col1, col2, col3 = st.columns(3)
 
-        criteria.rtp = col1.number_input(
+        col1.number_input(
             "RTP",
             key=f"rtp_{i}",
-            value=criteria.rtp,
+            value=st.session_state.get(f"rtp_{i}", criteria.rtp),
             step=0.001,
         )
 
-        criteria.av = col2.number_input(
+        col2.number_input(
             "Avg Win",
             key=f"av_{i}",
-            value=criteria.av,
+            value=st.session_state.get(f"av_{i}", criteria.av),
             step=0.01,
         )
 
-        criteria.hr = col3.number_input(
+        col3.number_input(
             "Hit Rate",
             key=f"hr_{i}",
-            value=criteria.hr,
+            value=st.session_state.get(f"hr_{i}", criteria.hr),
             step=0.01,
         )
 
         if st.button(
             f"Compute missing value for '{criteria.name}'",
             key=f"compute_{i}",
+            on_click=compute_missing,
+            args=(
+                i,
+                state,
+                st.session_state.get(f"rtp_{i}", criteria.rtp),
+                st.session_state.get(f"hr_{i}", criteria.hr),
+                st.session_state.get(f"av_{i}", criteria.av),
+            ),
         ):
-            for nme, val in zip(("hr", "av", "rtp"), (criteria.hr, criteria.av, criteria.rtp)):
-                if val is None:
-                    setattr(criteria, nme, val)
 
-            criteria.rtp, criteria.hr, criteria.av = calculate_params(
-                criteria.rtp, criteria.hr, criteria.av, state.cost
-            )
             state.dist_objects.append(
                 Distribution(criteria=criteria.name, rtp=criteria.rtp, hr=criteria.hr, av_win=criteria.av)
             )
 
-            state.zero_prob -= 1.0 / criteria.hr
-
             st.success(
-                f"Solved missing value for '{criteria.name}'\n RTP:{criteria.rtp}, Av Win: {criteria.av}, hr: {criteria.hr}"
+                f"Solved missing value for '{criteria.name}'\n RTP:{criteria.rtp}, Av Win: {criteria.av}, hr: {criteria.hr}",
             )
+
         state.criteria_list[i].plot_log_scale = st.checkbox(
             f"Plot semi log-scale (x) for {state.criteria_list[i].name}", key=f"plot_log_scale_{i}"
         )

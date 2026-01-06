@@ -111,9 +111,12 @@ class AppState:
     log_normal_params: list[LogNormalParams] = field(default_factory=list)
     plot_params: list[PlotSettings] = field(default_factory=list)
     zero_ids: list[int] = field(default_factory=list)
+    mode_contains_zero_criteria: bool = True
+    all_payout_ints: list[int] = field(default_factory=list)
     zero_prob: float = 1.0
     lookup_length: int = 0
     book_offset = 1
+    max_payout: float = 0.0
     weight_scale: int = field(default=50)
 
     set_params: bool = False
@@ -132,6 +135,7 @@ class AppState:
     segmented_name: str = ""
     segmented_file: str = ""
     opt_settings: list[ConvexOptSetup] = field(default_factory=list)
+    lut_read_complete: bool = field(default=False)
 
     # to do - assign these in gui
     win_step_size: float = field(default=0.1)

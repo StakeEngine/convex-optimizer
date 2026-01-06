@@ -1,6 +1,7 @@
 import streamlit as st
 import numpy as np
 import cvxpy as cp
+import warnings
 from src.class_setup.state import AppState
 from src.computation.compute_params import reset_optimizer_and_merge
 from src.util.utils import hit_rates_ranges
@@ -107,8 +108,6 @@ def render_optimizer_results(state: AppState):
 def merge_solutions(state: AppState):
     criteria_prob = {}
     final_lookup = []
-    zero_ids = set([i + state.book_offset for i in range(state.lookup_length)])  # assume zero index, fix this
-
     contain = st.container(border=True)
     for i, d in enumerate(state.criteria_list):
 
@@ -126,7 +125,9 @@ def merge_solutions(state: AppState):
 
         d.optimized_final_distribution = {}
         for p, w in unique_weights.items():
-            d.optimized_final_distribution[p] = w * (1.0 / unique_counter[p])
+            if w < 0:
+                warnings.warn(f"poor weight fit for {p} - {w}")
+            d.optimized_final_distribution[p] = max(w * (1.0 / unique_counter[p]), 0)
 
         sanity_rtp = 0.0
         cumulative_prob = 0.0
@@ -136,7 +137,6 @@ def merge_solutions(state: AppState):
             final_lookup.append((sim, w, int(pay * 100)))
             sanity_rtp += pay * w
             cumulative_prob += w
-        zero_ids -= set(state.dist_objects[i].book_ids)
 
         contain.write(
             f"{d.name} [Output]:",
@@ -146,9 +146,10 @@ def merge_solutions(state: AppState):
         contain.write(f"Expected Hit-Rate: {d.hr}\n\n***************")
 
     # get 0 wins
-    idv_zero_prob = state.zero_prob / len(state.zero_ids)
-    for i in list(state.zero_ids):
-        final_lookup.append((i, idv_zero_prob, 0))
+    if len(state.zero_ids) > 0:
+        idv_zero_prob = state.zero_prob / len(state.zero_ids)
+        for i in list(state.zero_ids):
+            final_lookup.append((i, idv_zero_prob, 0))
 
     # write disused sim numbers with zero-weight
     for idx, j in enumerate(list(state.disused_sims)):

@@ -46,20 +46,40 @@ def reset_optimizer_and_merge(state: AppState):
 def render_compute_params(state: AppState):
     summaryObj = SummaryGame(None, None)
 
-    max_payout_float = 0
-    if len(state.lut_file) > 0:
-        all_payout_ints = read_csv(state.lut_file)
-        max_payout_float = round(max(all_payout_ints) / 100, 2)
+    if len(state.lut_file) > 0 and not (state.lut_read_complete):
+        state.all_payout_ints = read_csv(state.lut_file)
+        max_payout_float = round(max(state.all_payout_ints) / 100, 2)
+        state.max_payout = max_payout_float
+        state.lut_read_complete = True
+
+        assigned, unassigned = [], []
+        for c in state.criteria_list:
+            (unassigned if c.hr is None else assigned).append(c)
+
+        if len(unassigned) > 1:
+            st.error(
+                "Only one criteria can have unassigned hit-rate; all others must have 2 of 3 parameters applied"
+            )
+            return
+
+        used_prob = sum(1.0 / c.hr for c in assigned)
+        remaining_prob = 1.0 - used_prob
+
+        if remaining_prob < 0:
+            st.error("Assigned hit-rates exceed total probability")
+            return
+
+        if unassigned:
+            new_hr = 1.0 / remaining_prob
+            c = unassigned[0]
+            c.hr = new_hr
+
+        state.zero_prob -= sum(1.0 / c.hr for c in state.criteria_list)
 
     for i, o in enumerate(state.dist_objects):
         # extract book ids
         if not o.book_ids:
-            o.book_ids, o.payouts, state.lookup_length, state.zero_ids = extract_ids(
-                state,
-                o.criteria,
-                [0],
-                max_payout_float,
-            )
+            o.book_ids, o.payouts, state.lookup_length, state.zero_ids = extract_ids(state, o.criteria)
             if summaryObj.zero_id_len is None or summaryObj.lookup_length is None:
                 summaryObj.zero_id_len = len(state.zero_ids)
                 summaryObj.lookup_length = state.lookup_length
@@ -87,7 +107,17 @@ def render_compute_params(state: AppState):
 
     if len(state.lut_file) > 0:
         state.disused_sims = list(remaining_sim_ids)
-        state.disused_int_payouts = [int(all_payout_ints[i - state.book_offset]) for i in list(remaining_sim_ids)]
+        state.disused_int_payouts = [
+            int(state.all_payout_ints[i - state.book_offset]) for i in list(remaining_sim_ids)
+        ]
+
+    with st.expander("Criteria Summary"):
+        for i, c in enumerate(state.criteria_list):
+            st.write(
+                f"{c.name}:\n\nRTP:{c.rtp} -- Av Win: {c.av} -- Hit-Rate:{c.hr} \n\nNum IDs: {len(state.dist_objects[i].book_ids)}"
+            )
+        if state.zero_prob not in [0, 1]:
+            st.write(f"Zero Wins:\n\nHit-Rate:{round(1.0/state.zero_prob,2)} -- Num IDs: {len(state.zero_ids)}")
 
     with st.expander("Game/Mode Split Summary"):
         st.write(
@@ -102,6 +132,15 @@ def render_compute_params(state: AppState):
                     f"Mode Info ({o.criteria}): \n\n{summaryObj.mode_summary[i].mode_ids} mode sumulations found"
                 )
                 st.write(f"{summaryObj.mode_summary[i].unique_payouts} unique payouts in mode")
+
+    # normalize hit-rates so HR of all modes = 1
+    if state.set_params:
+        if len(state.criteria_list) == 1 and not state.mode_contains_zero_criteria:
+            state.criteria_list[0].hr = 1.0
+    #     else:
+    #         total_hr = sum([(1.0 / c.hr) for c in state.criteria_list]) + state.zero_prob
+    #         for c in state.criteria_list:
+    #             c.hr /= total_hr
 
 
 def merge_dist_pdf(pdf1, pdf2, mix_factor, criteria_scale=1.0):
