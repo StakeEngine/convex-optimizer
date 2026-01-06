@@ -1,6 +1,18 @@
 ## Installation Instructions
 
-run `make install` to execute setup using the Makefile
+1. Set up the environment
+```sh
+make setup
+```
+
+2. Launch the GUI
+```sh
+streamlit run src/app.py
+```
+
+On Windows, `streamlit` might not be available in the terminal.
+By providing the path to the executable, you can still run it:<br/>
+`.\env\Scripts\streamlit.exe run .\src\app.py`
 
 
 ## About 
