@@ -149,9 +149,10 @@ def merge_solutions(state: AppState):
         contain.write(f"Expected Hit-Rate: {d.hr}\n\n***************")
 
     # get 0 wins
-    idv_zero_prob = state.zero_prob / len(state.zero_ids)
-    for i in list(state.zero_ids):
-        final_lookup.append((i, idv_zero_prob, 0))
+    if len(state.zero_ids) > 0:
+        idv_zero_prob = state.zero_prob / len(state.zero_ids)
+        for i in list(state.zero_ids):
+            final_lookup.append((i, idv_zero_prob, 0))
 
     # write disused sim numbers with zero-weight
     for idx, j in enumerate(list(state.disused_sims)):

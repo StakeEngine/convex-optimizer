@@ -6,7 +6,7 @@ from src.class_setup.state import AppState, ModeData, CriteraParams
 from src.class_setup.models import LogNormalParams, GaussianParams, ExponentialParams
 
 
-def extract_ids(state: AppState, target_string, exclustion_payouts, max_payout):
+def extract_ids(state: AppState, target_string, exclustion_payouts, criteria_auto_zero):
     ids = []
     pays = []
     exc_payouts = []
@@ -18,13 +18,12 @@ def extract_ids(state: AppState, target_string, exclustion_payouts, max_payout):
         for line in f:
             total_lookup_length += 1
             book, criteria, a, b = line.strip().split(",")
-            tot = min(round(float(a) + float(b), 2), max_payout)
-            if (criteria.lower() == target_string.lower()) or (
-                isinstance(criteria, int) and not state.auto_assign_zero_hr and tot == 0.0
-            ):
+            criteria = str(criteria)
+            tot = min(round(float(a) + float(b), 2), state.max_payout)
+            if (criteria.lower() == target_string.lower() and tot > 0) or (tot == 0 and not criteria_auto_zero):
                 ids.append(int(book))
                 pays.append(tot)
-            elif state.auto_assign_zero_hr and tot == 0:
+            elif state.auto_assign_zero_hr and tot == 0 and criteria_auto_zero:
                 zero_ids.append(int(book))
 
     return ids, pays, total_lookup_length, zero_ids

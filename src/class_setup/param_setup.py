@@ -6,13 +6,15 @@ from src.util.utils import calculate_params
 
 def render_mode_editor(state: AppState):
 
-    mde, cst, step = st.columns(3)
+    mde, cst, step, zero_criteria = st.columns(4)
     with mde:
         state.mode = st.text_input("Game Mode", key="gmode", value="base", width=150)
     with cst:
         state.cost = st.number_input("Mode Cost:", value=1.0, width=100)
     with step:
         state.win_step_size = st.number_input("Win Step Size", 0.0, 100.0, 0.01, width=80)
+    with zero_criteria:
+        state.mode_contains_zero_criteria = st.checkbox("'0' Criteria?", True, "contains_zero_criteria")
 
     indir, outdir = st.columns(2)
     with indir:
@@ -32,11 +34,13 @@ def render_mode_editor(state: AppState):
 
 
 def render_criteria_editor(state: AppState):
-    criteria_input = st.text_input(
-        "input criteria",
-        width=200,
-        value="basegame",
-        key="criteria_input",
+    criteria_input = str(
+        st.text_input(
+            "input criteria",
+            width=200,
+            value="basegame",
+            key="criteria_input",
+        )
     )
 
     if st.button("Append", key="append_criteria", width=80):
@@ -105,6 +109,10 @@ def render_criteria_params(state: AppState):
             st.success(
                 f"Solved missing value for '{criteria.name}'\n RTP:{criteria.rtp}, Av Win: {criteria.av}, hr: {criteria.hr}"
             )
+
+        state.criteria_list[i].auto_solve_zero_criteria = st.checkbox(
+            "Auto-assign 0-wins", True, key="criteria_auto_assign_{i}"
+        )
         state.criteria_list[i].plot_log_scale = st.checkbox(
             f"Plot semi log-scale (x) for {state.criteria_list[i].name}", key=f"plot_log_scale_{i}"
         )

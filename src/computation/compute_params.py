@@ -46,11 +46,10 @@ def reset_optimizer_and_merge(state: AppState):
 def render_compute_params(state: AppState):
     summaryObj = SummaryGame(None, None)
 
-    max_payout_float = 0
-    all_payout_ints = []
     if len(state.lut_file) > 0 and not (state.lut_read_complete):
-        all_payout_ints = read_csv(state.lut_file)
-        max_payout_float = round(max(all_payout_ints) / 100, 2)
+        state.all_payout_ints = read_csv(state.lut_file)
+        max_payout_float = round(max(state.all_payout_ints) / 100, 2)
+        state.max_payout = max_payout_float
         state.lut_read_complete = True
 
     exclude_payouts = []
@@ -60,11 +59,16 @@ def render_compute_params(state: AppState):
     for i, o in enumerate(state.dist_objects):
         # extract book ids
         if not o.book_ids:
+            criteria_match = False
+            for c in state.criteria_list:
+                if c.name == o.criteria:
+                    autosolve_c = c.auto_solve_zero_criteria
+                    criteria_match = True
+                    break
+            if not criteria_match:
+                raise RuntimeError("no criteria match")
             o.book_ids, o.payouts, state.lookup_length, state.zero_ids = extract_ids(
-                state,
-                o.criteria,
-                exclude_payouts,
-                max_payout_float,
+                state, o.criteria, exclude_payouts, autosolve_c
             )
             if summaryObj.zero_id_len is None or summaryObj.lookup_length is None:
                 summaryObj.zero_id_len = len(state.zero_ids)
@@ -93,7 +97,9 @@ def render_compute_params(state: AppState):
 
     if len(state.lut_file) > 0:
         state.disused_sims = list(remaining_sim_ids)
-        state.disused_int_payouts = [int(all_payout_ints[i - state.book_offset]) for i in list(remaining_sim_ids)]
+        state.disused_int_payouts = [
+            int(state.all_payout_ints[i - state.book_offset]) for i in list(remaining_sim_ids)
+        ]
 
     with st.expander("Game/Mode Split Summary"):
         st.write(
@@ -108,6 +114,15 @@ def render_compute_params(state: AppState):
                     f"Mode Info ({o.criteria}): \n\n{summaryObj.mode_summary[i].mode_ids} mode sumulations found"
                 )
                 st.write(f"{summaryObj.mode_summary[i].unique_payouts} unique payouts in mode")
+
+    # normalize hit-rates so HR of all modes = 1
+    if state.set_params:
+        if len(state.criteria_list) == 1 and not state.criteria_list[0].auto_solve_zero_criteria:
+            state.criteria_list[0].hr = 1.0
+        else:
+            total_hr = sum([(1.0 / c.hr) for c in state.criteria_list]) + state.zero_prob
+            for c in state.criteria_list:
+                c.hr /= total_hr
 
 
 def merge_dist_pdf(pdf1, pdf2, mix_factor, criteria_scale=1.0):
