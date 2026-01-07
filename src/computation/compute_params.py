@@ -235,6 +235,15 @@ def render_target_dist_params(state: AppState):
                                 on_change=reset_optimizer_and_merge,
                                 args=(state,),
                             )
+                            cc1, cc2 = st.columns(2)
+                            with cc1:
+                                dist_params.xmin = st.number_input(
+                                    "xmin", 0.0, max(c.xact), 0.0, key=f"xmin{i}_{d}"
+                                )
+                            with cc2:
+                                dist_params.xmax = st.number_input(
+                                    "xmax", 0.0, max(c.xact), max(c.xact), key=f"xmax_{i}_{d}"
+                                )
                             # dist_params.scale = st.slider(
                             #     "Distribution Scale",
                             #     0.1,
@@ -253,8 +262,22 @@ def render_target_dist_params(state: AppState):
                             st.text(f"Target Mean: {round(dist_params.the_exp *(1.0 / c.hr) ,3)}")
 
                             # compute the probability distribution
-                            ythe = get_log_normal_pdf(c.xthe, dist_params.mode, dist_params.std, 1.0 / c.hr)
-                            yact = get_log_normal_pdf(c.xact, dist_params.mode, dist_params.std, 1.0 / c.hr)
+                            ythe = get_log_normal_pdf(
+                                c.xthe,
+                                dist_params.mode,
+                                dist_params.std,
+                                1.0 / c.hr,
+                                dist_params.xmin,
+                                dist_params.xmax,
+                            )
+                            yact = get_log_normal_pdf(
+                                c.xact,
+                                dist_params.mode,
+                                dist_params.std,
+                                1.0 / c.hr,
+                                dist_params.xmin,
+                                dist_params.xmax,
+                            )
 
                         elif c.dist_type[d] == "Gaussian":
                             def_mean = state.cost
@@ -286,6 +309,15 @@ def render_target_dist_params(state: AppState):
                                 on_change=reset_optimizer_and_merge,
                                 args=(state,),
                             )
+                            cc1, cc2 = st.columns(2)
+                            with cc1:
+                                dist_params.xmin = st.number_input(
+                                    "xmin", 0.0, max(c.xact), 0.0, key=f"xmin{i}_{d}"
+                                )
+                            with cc2:
+                                dist_params.xmax = st.number_input(
+                                    "xmax", 0.0, max(c.xact), max(c.xact), key=f"xmax_{i}_{d}"
+                                )
                             # dist_params.scale = st.slider(
                             #     "Distribution Scale",
                             #     0.1,
@@ -296,8 +328,22 @@ def render_target_dist_params(state: AppState):
                             #     on_change=reset_optimizer_and_merge,
                             #     args=(state,),
                             # )
-                            ythe = get_gaussian_pdf(c.xthe, dist_params.mean, dist_params.std, 1.0 / c.hr)
-                            yact = get_gaussian_pdf(c.xact, dist_params.mean, dist_params.std, 1.0 / c.hr)
+                            ythe = get_gaussian_pdf(
+                                c.xthe,
+                                dist_params.mean,
+                                dist_params.std,
+                                1.0 / c.hr,
+                                dist_params.xmin,
+                                dist_params.xmax,
+                            )
+                            yact = get_gaussian_pdf(
+                                c.xact,
+                                dist_params.mean,
+                                dist_params.std,
+                                1.0 / c.hr,
+                                dist_params.xmin,
+                                dist_params.xmax,
+                            )
 
                         elif c.dist_type[d] == "Exponential":
                             def_power = 1.0
@@ -316,6 +362,15 @@ def render_target_dist_params(state: AppState):
                                 on_change=reset_optimizer_and_merge,
                                 args=(state,),
                             )
+                            cc1, cc2 = st.columns(2)
+                            with cc1:
+                                dist_params.xmin = st.number_input(
+                                    "xmin", 0.0, max(c.xact), 0.0, key=f"xmin{i}_{d}"
+                                )
+                            with cc2:
+                                dist_params.xmax = st.number_input(
+                                    "xmax", 0.0, max(c.xact), max(c.xact), key=f"xmax_{i}_{d}"
+                                )
                             # dist_params.scale = st.slider(
                             #     "Distribution Scale",
                             #     0.1,
@@ -327,8 +382,12 @@ def render_target_dist_params(state: AppState):
                             #     args=(state,),
                             # )
 
-                            ythe = get_exp_pdf(c.xthe, dist_params.power, 1.0 / c.hr)
-                            yact = get_exp_pdf(c.xact, dist_params.power, 1.0 / c.hr)
+                            ythe = get_exp_pdf(
+                                c.xthe, dist_params.power, 1.0 / c.hr, dist_params.xmin, dist_params.xmax
+                            )
+                            yact = get_exp_pdf(
+                                c.xact, dist_params.power, 1.0 / c.hr, dist_params.xmin, dist_params.xmax
+                            )
 
                     if d == 0:
                         c.dist1_params = dist_params

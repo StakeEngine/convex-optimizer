@@ -8,7 +8,6 @@ def render_plots(state: AppState, containter):
     if state.set_params:
         for i, c in enumerate(state.criteria_list):
             if len(c.xact) > 10:  # look at why there is sometimes a 0 win for set win amount
-                # st.write(c.xact)
                 plot_params = state.plot_params[i]
                 xmin_disp, xmax_disp = containter.columns(2)
                 plot_params.xmin = xmin_disp.number_input(
@@ -17,43 +16,76 @@ def render_plots(state: AppState, containter):
                 plot_params.xmax = xmax_disp.number_input(
                     label="max x-axis", value=10 * state.cost, key=f"max_x_plot_{i}", width=150
                 )
-                plot_params.show_the_curve = containter.checkbox(
-                    "Plot theoretical curve",
+
+                c1, c2, c3, c4 = containter.columns(4)
+                plot_params.show_the_curve = c1.checkbox(
+                    "Plot Theoretical Curve",
                     value=plot_params.show_the_curve,
                     key=f"plot_the_{i}",
                 )
+                plot_params.normalize_all = c2.checkbox(
+                    "Normalize Curves",
+                    value=plot_params.normalize_all,
+                    key=f"normalize_{i}",
+                )
+                plot_params.log_scale = c3.checkbox(
+                    "Log Scale",
+                    value=plot_params.log_scale,
+                    key=f"log_scale_{i}",
+                )
+                if len(c.merged_dist) > 0:
+                    plot_params.base_curves = c4.checkbox(
+                        "Plot Distribution Parts", value=True, key=f"plot_parts_{i}"
+                    )
+
                 with st.container():
                     fig, ax = plt.subplots()
-                    for d in range(c.num_dists):
-                        if c.plot_log_scale:
-                            if plot_params.show_the_curve:
-                                ax.semilogx(c.dist_values[d].xthe, c.dist_values[d].ythe, color="black")
-                            ax.semilogx(
-                                c.dist_values[d].xact,
-                                c.dist_values[d].yact,
-                                marker="o",
-                                color=colours[d],
-                                linestyle="None",
-                                label=f"payout fit: {c.dist_type[d]}",
-                            )
-                        else:
-                            if plot_params.show_the_curve:
-                                ax.plot(c.dist_values[d].xthe, c.dist_values[d].ythe, color="black")
-                            ax.plot(
-                                c.dist_values[d].xact,
-                                c.dist_values[d].yact,
-                                marker="o",
-                                color=colours[d],
-                                linestyle="None",
-                                label=f"payout fit: {c.dist_type[d]}",
-                            )
+                    if plot_params.base_curves:
+                        for d in range(c.num_dists):
+                            ytot_the, ytot_act = 1.0, 1.0
+                            if plot_params.normalize_all:
+                                ytot_the = sum(c.dist_values[d].ythe)
+                                ytot_act = sum(c.dist_values[d].yact)
+
+                            ythe = [x / ytot_the for x in list(c.dist_values[d].ythe)]
+                            yact = [x / ytot_act for x in list(c.dist_values[d].yact)]
+
+                            if plot_params.log_scale:
+                                if plot_params.show_the_curve:
+                                    ax.semilogx(c.dist_values[d].xthe, ythe, color="black")
+                                ax.semilogx(
+                                    c.dist_values[d].xact,
+                                    yact,
+                                    marker="o",
+                                    color=colours[d],
+                                    linestyle="None",
+                                    label=f"payout fit: {c.dist_type[d]}",
+                                )
+                            else:
+                                if plot_params.show_the_curve:
+                                    ax.plot(c.dist_values[d].xthe, ythe, color="black")
+                                ax.plot(
+                                    c.dist_values[d].xact,
+                                    yact,
+                                    marker="o",
+                                    color=colours[d],
+                                    linestyle="None",
+                                    label=f"payout fit: {c.dist_type[d]}",
+                                )
                     if len(c.merged_dist) > 0:
-                        if c.plot_log_scale:
+                        ymerge_the, ymerge_act = 1.0, 1.0
+                        if plot_params.normalize_all:
+                            ymerge_the = sum(c.merged_dist_the)
+                            ymerge_act = sum(c.merged_dist)
+                        ythe_merge = [x / ymerge_the for x in c.merged_dist_the]
+                        yact_merge = [x / ymerge_act for x in c.merged_dist]
+
+                        if plot_params.log_scale:
                             if plot_params.show_the_curve:
-                                ax.semilogx(c.xthe, c.merged_dist_the, color="black")
+                                ax.semilogx(c.xthe, ythe_merge, color="black")
                             ax.semilogx(
                                 c.xact,
-                                c.merged_dist,
+                                yact_merge,
                                 marker="x",
                                 color="g",
                                 linewidth=0.8,
@@ -61,10 +93,10 @@ def render_plots(state: AppState, containter):
                             )
                         else:
                             if plot_params.show_the_curve:
-                                ax.plot(c.xthe, c.merged_dist_the, color="black")
+                                ax.plot(c.xthe, ythe_merge, color="black")
                             ax.plot(
                                 c.xact,
-                                c.merged_dist,
+                                yact_merge,
                                 marker="x",
                                 color="g",
                                 linewidth=0.8,
@@ -72,10 +104,14 @@ def render_plots(state: AppState, containter):
                             )
 
                     if plot_params.show_solution and len(c.solved_weights) > 0:
-                        if c.plot_log_scale:
+                        ysol_tot = 1.0
+                        if plot_params.normalize_all:
+                            ysol_tot = sum(c.solved_weights)
+                        ysol = [x / ysol_tot for x in c.solved_weights]
+                        if plot_params.log_scale:
                             ax.semilogx(
                                 c.xact,
-                                c.solved_weights,
+                                ysol,
                                 marker="x",
                                 color="r",
                                 linewidth=0.8,
@@ -84,7 +120,7 @@ def render_plots(state: AppState, containter):
                         else:
                             ax.plot(
                                 c.xact,
-                                c.solved_weights,
+                                ysol,
                                 marker="x",
                                 color="r",
                                 linewidth=0.8,
