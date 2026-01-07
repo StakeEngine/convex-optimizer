@@ -1,8 +1,5 @@
 ## Installation Instructions
 
-<<<<<<< HEAD
-run `make setup` to execute setup using the Makefile
-=======
 1. Set up the environment
 ```sh
 make setup
