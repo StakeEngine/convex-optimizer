@@ -16,11 +16,12 @@ def get_log_normal_pdf(payouts, mode, std, scale, xmin, xmax):
     # need to filter 0 payouts
     x = np.array(payouts)
     x[x <= 0] = 1e-9
-    x[x < xmin] = 0
-    x[x > xmax] = 0
     pdf = (1 / (x * std * np.sqrt(2 * np.pi))) * np.exp(-((np.log(x / mode) - std**2) ** 2) / (2 * std**2))
 
-    pdf /= pdf.sum()
+    mask = (x >= xmin) & (x <= xmax)
+    pdf = pdf * mask
+    total = pdf.sum()
+    pdf /= total
     pdf_norm = []
     for p in pdf:
         pdf_norm.append(p * scale)  # I dont like doing this
@@ -29,23 +30,27 @@ def get_log_normal_pdf(payouts, mode, std, scale, xmin, xmax):
 
 def get_gaussian_pdf(payouts, mean, std, scale, xmin, xmax):
     x = np.asarray(payouts, dtype=float)
-    x[x < xmin] = 0
-    x[x > xmax] = 0
     if std <= 0:
         raise ValueError("Standard deviation must be > 0")
 
     pdf = 1.0 / (std * np.sqrt(2 * np.pi)) * np.exp(-0.5 * ((x - mean) / std) ** 2)
-    pdf /= pdf.sum()
+
+    mask = (x >= xmin) & (x <= xmax)
+    pdf = pdf * mask
+    total = pdf.sum()
+    pdf /= total
 
     return (pdf * scale).tolist()
 
 
 def get_exp_pdf(payouts, power, scale, xmin, xmax):
     x = np.asarray(payouts, dtype=float)
-    x[x < xmin] = 0
-    x[x > xmax] = 0
     pdf = np.exp(-1 * np.power(x, power))
-    pdf /= pdf.sum()
+
+    mask = (x >= xmin) & (x <= xmax)
+    pdf = pdf * mask
+    total = pdf.sum()
+    pdf /= total
 
     return (pdf * scale).tolist()
 
