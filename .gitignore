@@ -2,6 +2,7 @@
 *.egg-info/
 *.pyc
 *.cpython
+*.csv
 .vscode/settings.json
 *.DS_Store
 /*.env
