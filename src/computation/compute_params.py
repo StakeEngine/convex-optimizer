@@ -120,11 +120,11 @@ def render_compute_params(state: AppState):
             st.write(f"Zero Wins:\n\nHit-Rate:{round(1.0/state.zero_prob,2)} -- Num IDs: {len(state.zero_ids)}")
 
     with st.expander("Game/Mode Split Summary"):
-        st.write(
-            f"Game Info: \n\nLookup length: {summaryObj.lookup_length} \n\nNum Zero-IDs: {summaryObj.zero_id_len}"
-        )
         if state.set_params:
-            st.warning(f"{state.lookup_length - len(remaining_sim_ids)} non-zero ids without matching criteria!")
+            st.write(
+                f"Game Info: \n\nLookup length: {summaryObj.lookup_length} \n\nNum Zero-IDs: {summaryObj.zero_id_len}"
+            )
+            st.warning(f"{len(remaining_sim_ids)} non-zero ids without matching criteria!")
         for i, o in enumerate(state.dist_objects):
             st.space()
             with st.container():
@@ -217,7 +217,7 @@ def render_target_dist_params(state: AppState):
                                 def_mean = st.session_state[f"log_mu_{i}_{d}"]
                             dist_params.mode = st.number_input(
                                 "Distribution Mode",
-                                0.01 * state.cost,
+                                0.0,
                                 1000.0 * state.cost,
                                 def_mode,
                                 0.01 * state.cost,
@@ -235,7 +235,7 @@ def render_target_dist_params(state: AppState):
                                 on_change=reset_optimizer_and_merge,
                                 args=(state,),
                             )
-                            cc1, cc2 = st.columns(2)
+                            cc1, cc2, cc3 = st.columns(3)
                             with cc1:
                                 dist_params.xmin = st.number_input(
                                     "xmin", 0.0, max(c.xact), 0.0, key=f"xmin{i}_{d}"
@@ -243,6 +243,10 @@ def render_target_dist_params(state: AppState):
                             with cc2:
                                 dist_params.xmax = st.number_input(
                                     "xmax", 0.0, max(c.xact), max(c.xact), key=f"xmax_{i}_{d}"
+                                )
+                            with cc3:
+                                dist_params.linear_offset = st.number_input(
+                                    "offset", 0.0, max(c.xact), 0.0, key=f"offset_{i}_{d}"
                                 )
                             # dist_params.scale = st.slider(
                             #     "Distribution Scale",
@@ -269,6 +273,7 @@ def render_target_dist_params(state: AppState):
                                 1.0 / c.hr,
                                 dist_params.xmin,
                                 dist_params.xmax,
+                                dist_params.linear_offset,
                             )
                             yact = get_log_normal_pdf(
                                 c.xact,
@@ -277,6 +282,7 @@ def render_target_dist_params(state: AppState):
                                 1.0 / c.hr,
                                 dist_params.xmin,
                                 dist_params.xmax,
+                                dist_params.linear_offset,
                             )
 
                         elif c.dist_type[d] == "Gaussian":
@@ -291,7 +297,7 @@ def render_target_dist_params(state: AppState):
                                 def_mean = st.session_state[f"gauss_mu_{i}_{d}"]
                             dist_params.mean = st.number_input(
                                 "Distribution Mode",
-                                0.01 * state.cost,
+                                -10.0 * state.cost,
                                 1000.0 * state.cost,
                                 def_mean,
                                 0.01 * state.cost,
@@ -309,7 +315,7 @@ def render_target_dist_params(state: AppState):
                                 on_change=reset_optimizer_and_merge,
                                 args=(state,),
                             )
-                            cc1, cc2 = st.columns(2)
+                            cc1, cc2, cc3 = st.columns(3)
                             with cc1:
                                 dist_params.xmin = st.number_input(
                                     "xmin", 0.0, max(c.xact), 0.0, key=f"xmin{i}_{d}"
@@ -317,6 +323,10 @@ def render_target_dist_params(state: AppState):
                             with cc2:
                                 dist_params.xmax = st.number_input(
                                     "xmax", 0.0, max(c.xact), max(c.xact), key=f"xmax_{i}_{d}"
+                                )
+                            with cc3:
+                                dist_params.linear_offset = st.number_input(
+                                    "offset", 0.0, max(c.xact), 0.0, key=f"offset_{i}_{d}"
                                 )
                             # dist_params.scale = st.slider(
                             #     "Distribution Scale",
@@ -335,6 +345,7 @@ def render_target_dist_params(state: AppState):
                                 1.0 / c.hr,
                                 dist_params.xmin,
                                 dist_params.xmax,
+                                dist_params.linear_offset,
                             )
                             yact = get_gaussian_pdf(
                                 c.xact,
@@ -343,6 +354,7 @@ def render_target_dist_params(state: AppState):
                                 1.0 / c.hr,
                                 dist_params.xmin,
                                 dist_params.xmax,
+                                dist_params.linear_offset,
                             )
 
                         elif c.dist_type[d] == "Exponential":
@@ -362,7 +374,7 @@ def render_target_dist_params(state: AppState):
                                 on_change=reset_optimizer_and_merge,
                                 args=(state,),
                             )
-                            cc1, cc2 = st.columns(2)
+                            cc1, cc2, cc3 = st.columns(3)
                             with cc1:
                                 dist_params.xmin = st.number_input(
                                     "xmin", 0.0, max(c.xact), 0.0, key=f"xmin{i}_{d}"
@@ -370,6 +382,10 @@ def render_target_dist_params(state: AppState):
                             with cc2:
                                 dist_params.xmax = st.number_input(
                                     "xmax", 0.0, max(c.xact), max(c.xact), key=f"xmax_{i}_{d}"
+                                )
+                            with cc3:
+                                dist_params.linear_offset = st.number_input(
+                                    "offset", 0.0, max(c.xact), 0.0, key=f"offset_{i}_{d}"
                                 )
                             # dist_params.scale = st.slider(
                             #     "Distribution Scale",
@@ -383,10 +399,20 @@ def render_target_dist_params(state: AppState):
                             # )
 
                             ythe = get_exp_pdf(
-                                c.xthe, dist_params.power, 1.0 / c.hr, dist_params.xmin, dist_params.xmax
+                                c.xthe,
+                                dist_params.power,
+                                1.0 / c.hr,
+                                dist_params.xmin,
+                                dist_params.xmax,
+                                dist_params.linear_offset,
                             )
                             yact = get_exp_pdf(
-                                c.xact, dist_params.power, 1.0 / c.hr, dist_params.xmin, dist_params.xmax
+                                c.xact,
+                                dist_params.power,
+                                1.0 / c.hr,
+                                dist_params.xmin,
+                                dist_params.xmax,
+                                dist_params.linear_offset,
                             )
 
                     if d == 0:
