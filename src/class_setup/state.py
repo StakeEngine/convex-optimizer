@@ -23,7 +23,6 @@ class Distribution:
         self.sub_dist = []
 
         self.log_mode = None
-        self.log_scale = None
         self.log_std = None
         self.log_mu = None
         self.log_the_expectation = None
@@ -84,6 +83,9 @@ class PlotSettings:
     xmax: float = 10.0
     show_the_curve: bool = True
     show_solution: bool = False
+    normalize_all: bool = False
+    base_curves: bool = True
+    log_scale: bool = False
 
 
 @dataclass

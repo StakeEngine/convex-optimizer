@@ -127,7 +127,3 @@ def render_criteria_params(state: AppState):
             st.success(
                 f"Solved missing value for '{criteria.name}'\n RTP:{criteria.rtp}, Av Win: {criteria.av}, hr: {criteria.hr}",
             )
-
-        state.criteria_list[i].plot_log_scale = st.checkbox(
-            f"Plot semi log-scale (x) for {state.criteria_list[i].name}", key=f"plot_log_scale_{i}"
-        )
