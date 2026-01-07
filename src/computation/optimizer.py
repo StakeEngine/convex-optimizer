@@ -65,7 +65,7 @@ def solve_optimizer(state: AppState):
             cons = [
                 w >= 0,
                 cp.sum(w) == (1.0 / c.hr),
-                c.xact @ w == c.rtp,
+                c.xact @ w == c.rtp * state.cost,
             ]
 
             cp.Problem(obj, cons).solve(verbose=True)

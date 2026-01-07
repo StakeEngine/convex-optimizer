@@ -99,11 +99,11 @@ def hit_rates_ranges(payouts, weights):
 def calculate_params(rtp, hr, av_win, cost):
     if [rtp, hr, av_win].count(None) == 1:
         if rtp is None:
-            rtp = (cost * av_win) / hr
+            rtp = av_win / (hr * cost)
         elif hr is None:
-            hr = (av_win * cost) / rtp
+            hr = av_win / (rtp * cost)
         elif av_win is None:
-            av_win = (rtp * hr) / cost
+            av_win = rtp * hr * cost
 
     return rtp, hr, av_win
 

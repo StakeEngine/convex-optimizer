@@ -133,14 +133,9 @@ def render_compute_params(state: AppState):
                 )
                 st.write(f"{summaryObj.mode_summary[i].unique_payouts} unique payouts in mode")
 
-    # normalize hit-rates so HR of all modes = 1
     if state.set_params:
         if len(state.criteria_list) == 1 and not state.mode_contains_zero_criteria:
             state.criteria_list[0].hr = 1.0
-    #     else:
-    #         total_hr = sum([(1.0 / c.hr) for c in state.criteria_list]) + state.zero_prob
-    #         for c in state.criteria_list:
-    #             c.hr /= total_hr
 
 
 def merge_dist_pdf(pdf1, pdf2, mix_factor, criteria_scale=1.0):

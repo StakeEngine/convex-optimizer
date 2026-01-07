@@ -53,7 +53,7 @@ def render_criteria_editor(state: AppState):
 
 
 def ensure_criteria_state(criteria, i):
-    for name, default in [("rtp", None), ("av", None), ("hr", None)]:
+    for name in ["rtp", "av", "hr"]:
         key = f"{name}_{i}"
         if key not in st.session_state:
             st.session_state[key] = getattr(criteria, name)
@@ -61,7 +61,6 @@ def ensure_criteria_state(criteria, i):
 
 def compute_missing(i: int, state: AppState, rtp, hr, av):
     criteria = state.criteria_list[i]
-
     rtp, hr, av = calculate_params(
         rtp,
         hr,
