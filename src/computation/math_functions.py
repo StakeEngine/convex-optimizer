@@ -100,3 +100,37 @@ def calculate_act_expectation(actual_payouts, pdf, cost=1):
     rtp = np.sum(np.array(actual_payouts) * probs) / cost
 
     return rtp, probs
+
+
+def get_quadratic_pdf(payouts, scale, quad, lin, xmin, xmax, offset):
+    x = np.asarray(payouts, float)
+
+    pdf = (quad * (x**2)) + (lin * x) + offset
+
+    mask = (x >= xmin) & (x <= xmax)
+    pdf *= mask
+    pdf /= pdf.sum()
+
+    return (pdf * scale).tolist()
+
+
+def get_linear_pdf(payouts, scale, lin, xmin, xmax, x_offset):
+    x = np.asarray(payouts, float)
+
+    pdf = lin * (x - x_offset)
+    pdf = np.where((x >= xmin) & (x <= xmax), pdf, 0.0)
+
+    pdf = np.clip(pdf, 1e-12, None)
+    pdf = pdf * (scale / pdf.sum())
+
+    return pdf.tolist()
+
+
+def get_rect_pdf(payouts, scale, xmin, xmax):
+    x = np.asarray(payouts, float)
+    pdf = ((x >= xmin) & (x <= xmax)).astype(float)
+
+    total = pdf.sum()
+    pdf *= scale / total
+
+    return pdf.tolist()

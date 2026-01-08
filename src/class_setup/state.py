@@ -1,5 +1,22 @@
+from typing import Union
 from dataclasses import dataclass, field
-from src.class_setup.models import LogNormalParams
+from src.class_setup.models import (
+    LogNormalParams,
+    GaussianParams,
+    ExponentialParams,
+    ParabolaParams,
+    LinearParams,
+    RectParams,
+)
+
+DistParams = Union[
+    LogNormalParams,
+    GaussianParams,
+    ExponentialParams,
+    ParabolaParams,
+    LinearParams,
+    RectParams,
+]
 
 
 class DistributionInput:
@@ -62,8 +79,8 @@ class CriteraParams:
     dist_values: dict = field(default_factory=dict)
     dist1_mix: float = field(default=0.5)
     dist2_mix: float = field(default=0.5)
-    dist1_params: LogNormalParams = field(default_factory=LogNormalParams)
-    dist2_params: LogNormalParams = field(default_factory=LogNormalParams)
+    dist1_params: DistParams = field(default_factory=LogNormalParams)
+    dist2_params: DistParams = field(default_factory=LogNormalParams)
     merged_dist: list = field(default_factory=list)
     merged_dist_the: list = field(default_factory=list)
 
@@ -99,8 +116,8 @@ class ModeData:
     solved_hr: dict = field(default_factory=dict)
     zero_prob: float = field(default_factory=float)
     zero_ids: list[int] = field(default_factory=list)
-    dist1_params: LogNormalParams = field(default_factory=LogNormalParams)
-    dist2_params: LogNormalParams = field(default_factory=LogNormalParams)
+    dist1_params: DistParams = field(default_factory=LogNormalParams)
+    dist2_params: DistParams = field(default_factory=LogNormalParams)
     plot_params: list[PlotSettings] = field(default_factory=list)
 
 
@@ -110,7 +127,7 @@ class AppState:
     cost: float = 1.0
     criteria_list: list[CriteraParams] = field(default_factory=list)
     dist_objects: list[Distribution] = field(default_factory=list)
-    log_normal_params: list[LogNormalParams] = field(default_factory=list)
+    log_normal_params: list[DistParams] = field(default_factory=list)
     plot_params: list[PlotSettings] = field(default_factory=list)
     zero_ids: list[int] = field(default_factory=list)
     mode_contains_zero_criteria: bool = True

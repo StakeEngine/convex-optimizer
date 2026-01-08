@@ -38,6 +38,11 @@ def render_plots(state: AppState, containter):
                         "Plot Distribution Parts", value=True, key=f"plot_parts_{i}"
                     )
 
+                if c.num_dists == 1 and c.dist_type[i] in ["Parabola", "Linear", "Rect"]:
+                    st.warning(
+                        "Parabolic, Linear and Exponential fits should only be used for mixed distribtuions.\n\nOptimization will likely fail with 1 distribution selected."
+                    )
+
                 with st.container():
                     fig, ax = plt.subplots()
                     if plot_params.base_curves:
@@ -128,6 +133,8 @@ def render_plots(state: AppState, containter):
                             )
 
                     ax.set_xlim([state.plot_params[i].xmin, state.plot_params[i].xmax])
+                    ax.relim()
+                    ax.autoscale_view(scalex=False, scaley=True)
                     ax.legend()
                     ax.grid(True)
                     ax.set_xlabel("payout value")

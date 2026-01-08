@@ -38,3 +38,30 @@ class ExponentialParams:
 
     xmin: float = 0.0
     xmax: float = 0.0
+
+
+@dataclass
+class ParabolaParams:
+    linear_offset: float = 0.0
+    xmin: float = 0.0
+    xmax: float = 0.0
+
+    quad_coef: float = 1.0
+    lin_coef: float = 1.0
+
+
+@dataclass
+class LinearParams:
+    linear_offset: float = 0.0
+    xmin: float = 0.0
+    xmax: float = 0.0
+
+    lin_coef: float = 1.0
+
+
+@dataclass
+class RectParams:
+    linear_offset: float = 1.0
+    xmin: float = 0.0
+    xmax: float = 0.0
+    height: float = 0.0

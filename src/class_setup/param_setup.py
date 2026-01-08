@@ -12,7 +12,7 @@ def render_mode_editor(state: AppState):
     with cst:
         state.cost = st.number_input("Mode Cost:", value=1.0, width=100)
     with step:
-        state.win_step_size = st.number_input("Win Step Size", 0.0, 100.0, 0.01, width=80)
+        state.win_step_size = st.number_input("Win Step Size", 0.0, 100.0, 0.1, width=80)
     with zero_criteria:
         state.mode_contains_zero_criteria = st.checkbox("'0' Criteria?", True, "contains_zero_criteria")
 
