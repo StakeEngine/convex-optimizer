@@ -259,24 +259,32 @@ def load_mode_solution(state: AppState, mode: str, soln: int) -> None:
                     st.session_state[f"log_var_{i}_{d}"] = params.std
                     st.session_state[f"log_mu_{i}_{d}"] = params.scale
                     st.session_state[f"log_offset_{i}_{d}"] = params.linear_offset
+                    st.session_state[f"log_xmin{i}_{d}"] = params.xmin
+                    st.session_state[f"log_xmax{i}_{d}"] = params.xmax
                 case "Gaussian":
                     st.session_state[f"gauss_mode_{i}_{d}"] = params.mean
                     st.session_state[f"gauss_var_{i}_{d}"] = params.std
                     st.session_state[f"gauss_mu_{i}_{d}"] = params.scale
                     st.session_state[f"gauss_offset_{i}_{d}"] = params.linear_offset
+                    st.session_state[f"gauss_xmin{i}_{d}"] = params.xmin
+                    st.session_state[f"gauss_xmax{i}_{d}"] = params.xmax
                 case "Exponential":
                     st.session_state[f"exp_mode_{i}_{d}"] = params.power
                     st.session_state[f"exp_mu_{i}_{d}"] = params.scale
                     st.session_state[f"exp_offset_{i}_{d}"] = params.linear_offset
+                    st.session_state[f"exp_xmin{i}_{d}"] = params.xmin
+                    st.session_state[f"exp_xmax{i}_{d}"] = params.xmax
                 case "Parabola":
-                    st.session_state[f"parab_quad_{i}_{d}"]
-                    st.session_state[f"parab_lin_{i}_{d}"]
+                    st.session_state[f"parab_quad_{i}_{d}"] = params.quad_coef
+                    st.session_state[f"parab_lin_{i}_{d}"] = params.lin_coef
+                    st.session_state[f"parab_xmin{i}_{d}"] = params.xmin
+                    st.session_state[f"parab_xmax{i}_{d}"] = params.xmax
                 case "Linear":
-                    st.session_state[f"lin_{i}_{d}"]
+                    st.session_state[f"lin_{i}_{d}"] = params.lin_coef
+                    st.session_state[f"lin_xmin{i}_{d}"] = params.xmin
+                    st.session_state[f"lin_xmax{i}_{d}"] = params.xmax
                 case "Rect":
-                    st.session_state[f"rect_{i}_{d}"]
-
-            st.session_state[f"xmin{i}_{d}"] = params.xmin
-            st.session_state[f"xmax{i}_{d}"] = params.xmax
+                    st.session_state[f"rect_xmin{i}_{d}"] = params.xmin
+                    st.session_state[f"rect_xmax{i}_{d}"] = params.xmax
 
     st.rerun()

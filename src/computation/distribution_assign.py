@@ -46,7 +46,7 @@ def assign_log_normal(
         0.0,
         1000.0 * state.cost,
         def_mode,
-        0.01 * state.cost,
+        0.1 * state.cost,
         key=f"log_mode_{i}_{d}",
         on_change=reset_optimizer_and_merge,
         args=(state,),
@@ -64,10 +64,10 @@ def assign_log_normal(
 
     cc1, cc2, cc3 = st.columns(3)
     with cc1:
-        dist_params.xmin = st.number_input("xmin", 0.0, max(criteria.xact), 0.0, key=f"xmin{i}_{d}")
+        dist_params.xmin = st.number_input("xmin", 0.0, max(criteria.xact), 0.0, key=f"log_xmin{i}_{d}")
     with cc2:
         dist_params.xmax = st.number_input(
-            "xmax", 0.0, max(criteria.xact), max(criteria.xact), key=f"xmax_{i}_{d}"
+            "xmax", 0.0, max(criteria.xact), max(criteria.xact), key=f"log_xmax_{i}_{d}"
         )
     with cc3:
         dist_params.linear_offset = st.number_input(
@@ -116,7 +116,7 @@ def assign_gaussian(
         -10.0 * state.cost,
         1000.0 * state.cost,
         def_mean,
-        0.01 * state.cost,
+        0.1 * state.cost,
         key=f"gauss_mode_{i}_{d}",
         on_change=reset_optimizer_and_merge,
         args=(state,),
@@ -133,10 +133,10 @@ def assign_gaussian(
     )
     cc1, cc2, cc3 = st.columns(3)
     with cc1:
-        dist_params.xmin = st.number_input("xmin", 0.0, max(criteria.xact), 0.0, key=f"xmin{i}_{d}")
+        dist_params.xmin = st.number_input("xmin", 0.0, max(criteria.xact), 0.0, key=f"gauss_xmin{i}_{d}")
     with cc2:
         dist_params.xmax = st.number_input(
-            "xmax", 0.0, max(criteria.xact), max(criteria.xact), key=f"xmax_{i}_{d}"
+            "xmax", 0.0, max(criteria.xact), max(criteria.xact), key=f"gauss_xmax_{i}_{d}"
         )
     with cc3:
         dist_params.linear_offset = st.number_input(
@@ -177,17 +177,17 @@ def assign_exponential(
         0.01,
         10.0,
         def_power,
-        0.01,
+        0.1,
         key=f"exp_mode_{i}_{d}",
         on_change=reset_optimizer_and_merge,
         args=(state,),
     )
     cc1, cc2, cc3 = st.columns(3)
     with cc1:
-        dist_params.xmin = st.number_input("xmin", 0.0, max(criteria.xact), 0.0, key=f"xmin{i}_{d}")
+        dist_params.xmin = st.number_input("xmin", 0.0, max(criteria.xact), 0.0, key=f"exp_xmin{i}_{d}")
     with cc2:
         dist_params.xmax = st.number_input(
-            "xmax", 0.0, max(criteria.xact), max(criteria.xact), key=f"xmax_{i}_{d}"
+            "xmax", 0.0, max(criteria.xact), max(criteria.xact), key=f"exp_xmax_{i}_{d}"
         )
     with cc3:
         dist_params.linear_offset = st.number_input(
@@ -245,10 +245,10 @@ def assign_parabola(
     )
     cc1, cc2, cc3 = st.columns(3)  # save these to state to reload
     with cc1:
-        dist_params.xmin = st.number_input("xmin", 0.0, max(criteria.xact), 0.0, key=f"xmin{i}_{d}")
+        dist_params.xmin = st.number_input("xmin", 0.0, max(criteria.xact), 0.0, key=f"parab_xmin{i}_{d}")
     with cc2:
         dist_params.xmax = st.number_input(
-            "xmax", 0.0, max(criteria.xact), max(criteria.xact), key=f"xmax_{i}_{d}"
+            "xmax", 0.0, max(criteria.xact), max(criteria.xact), key=f"parab_xmax_{i}_{d}"
         )
     with cc3:
         dist_params.linear_offset = st.number_input(
@@ -296,10 +296,10 @@ def assign_linear(
     )
     cc1, cc2, cc3 = st.columns(3)  # save these to state to reload
     with cc1:
-        dist_params.xmin = st.number_input("xmin", 0.0, max(criteria.xact), 0.0, key=f"xmin{i}_{d}")
+        dist_params.xmin = st.number_input("xmin", 0.0, max(criteria.xact), 0.0, key=f"lin_xmin{i}_{d}")
     with cc2:
         dist_params.xmax = st.number_input(
-            "xmax", 0.0, max(criteria.xact), max(criteria.xact), key=f"xmax_{i}_{d}"
+            "xmax", 0.0, max(criteria.xact), max(criteria.xact), key=f"lin_xmax_{i}_{d}"
         )
     with cc3:
         dist_params.linear_offset = st.number_input(
@@ -330,10 +330,10 @@ def assign_rect(dist_params: RectParams, criteria: CriteraParams, i: int, d: int
 
     cc1, cc2 = st.columns(2)  # save these to state to reload
     with cc1:
-        dist_params.xmin = st.number_input("xmin", 0.0, max(criteria.xact), 0.0, key=f"xmin{i}_{d}")
+        dist_params.xmin = st.number_input("xmin", 0.0, max(criteria.xact), 0.0, key=f"rect_xmin{i}_{d}")
     with cc2:
         dist_params.xmax = st.number_input(
-            "xmax", 0.0, max(criteria.xact), max(criteria.xact), key=f"xmax_{i}_{d}"
+            "xmax", 0.0, max(criteria.xact), max(criteria.xact), key=f"rect_xmax_{i}_{d}"
         )
 
     yact = get_rect_pdf(criteria.xact, 1.0 / criteria.hr, dist_params.xmin, dist_params.xmax)

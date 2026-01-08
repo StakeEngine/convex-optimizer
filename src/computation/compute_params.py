@@ -175,6 +175,8 @@ def render_target_dist_params(state: AppState):
                         key=f"dist1_mix_{i}",
                     )
                     c.dist2_mix = 1.0 - c.dist1_mix
+                else:
+                    c.num_dists = 1
 
                 for d in range(c.num_dists):
                     dist_type = st.radio(
