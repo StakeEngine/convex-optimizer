@@ -1,12 +1,38 @@
 import json
 import pickle
 from pathlib import Path
+from typing import Literal, Type
 import streamlit as st
 from src.class_setup.state import AppState, ModeData, CriteraParams
-from src.class_setup.models import LogNormalParams, GaussianParams, ExponentialParams
+from src.class_setup.models import (
+    LogNormalParams,
+    GaussianParams,
+    ExponentialParams,
+    ParabolaParams,
+    LinearParams,
+    RectParams,
+)
+
+DistType = Literal[
+    "Log-Normal",
+    "Gaussian",
+    "Exponential",
+    "Parabola",
+    "Linear",
+    "Rectangle",
+]
+
+DIST_PARAM_CLASSES: dict[DistType, Type] = {
+    "Log-Normal": LogNormalParams,
+    "Gaussian": GaussianParams,
+    "Exponential": ExponentialParams,
+    "Parabola": ParabolaParams,
+    "Linear": LinearParams,
+    "Rectangle": RectParams,
+}
 
 
-def extract_ids(state: AppState, target_string):
+def extract_ids(state: AppState, target_string: str):
     ids = []
     pays = []
     zero_ids = []
@@ -26,7 +52,7 @@ def extract_ids(state: AppState, target_string):
     return ids, pays, total_lookup_length, zero_ids
 
 
-def read_csv(fname):
+def read_csv(fname: str) -> list:
     payouts = []
     with open(fname, "r", encoding="utf-8") as f:
         for line in f:
@@ -36,7 +62,7 @@ def read_csv(fname):
     return payouts
 
 
-def get_unique_payouts(payouts):
+def get_unique_payouts(payouts: list) -> list:
     unique_payouts = []
     for p in payouts:
         if p not in unique_payouts:
@@ -44,7 +70,7 @@ def get_unique_payouts(payouts):
     return unique_payouts
 
 
-def get_uniuqe_payouts_from_lut(state: AppState, books):
+def get_uniuqe_payouts_from_lut(state: AppState, books: list) -> list:
     payouts = []
     with open(state.lut_file, "r", encoding="utf-8") as f:
         for line in f:
@@ -54,7 +80,7 @@ def get_uniuqe_payouts_from_lut(state: AppState, books):
     return payouts
 
 
-def hit_rates_ranges(payouts, weights):
+def hit_rates_ranges(payouts: list, weights: list) -> dict:
     ranges = [
         (0.0, 0.1),
         (0.1, 1.0),
@@ -96,7 +122,7 @@ def hit_rates_ranges(payouts, weights):
     return hr_dict
 
 
-def calculate_params(rtp, hr, av_win, cost):
+def calculate_params(rtp: float | None, hr: float | None, av_win: float | None, cost: float | None) -> list[float]:
     if [rtp, hr, av_win].count(None) == 1:
         if rtp is None:
             rtp = av_win / (hr * cost)
@@ -108,7 +134,7 @@ def calculate_params(rtp, hr, av_win, cost):
     return rtp, hr, av_win
 
 
-def get_optimizer_name(state: AppState):
+def get_optimizer_name(state: AppState) -> list[str]:
     output_dir = Path(state.root_dir) / state.out_dir
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -131,7 +157,7 @@ def get_optimizer_name(state: AppState):
     return output_lut, output_hr
 
 
-def write_optimized_lookup(state: AppState):
+def write_optimized_lookup(state: AppState) -> None:
     solnpath, hrpath = get_optimizer_name(state)
     with open(solnpath, "w", encoding="utf-8") as f:
         for ele in state.final_optimized_lookup:
@@ -149,7 +175,7 @@ def write_optimized_lookup(state: AppState):
     st.write("Write Successful.")
 
 
-def print_optimized_hr_table(state: AppState):
+def print_optimized_hr_table(state: AppState) -> None:
     with st.container(border=True):
         print_hr = {}
         for raange, h in state.hr_ranges.items():
@@ -157,7 +183,7 @@ def print_optimized_hr_table(state: AppState):
             print_hr[str(raange)] = round(h, 3)
 
 
-def save_mode_solution(state: AppState):
+def save_mode_solution(state: AppState) -> None:
     modeData = ModeData(
         name=state.mode,
         cost=state.cost,
@@ -188,27 +214,20 @@ def save_mode_solution(state: AppState):
     state.pickle_data = False
 
 
-def change_dist_params(state: AppState, criteria: CriteraParams, dist_type: str = "Log-Normal", dist_num: int = 0):
-    match dist_type:
-        case "Log-Normal":
-            if dist_num == 0:
-                criteria.dist1_params = LogNormalParams()
-            elif dist_num == 1:
-                criteria.dist2_params = LogNormalParams()
-        case "Gaussian":
-            if dist_num == 0:
-                criteria.dist1_params = GaussianParams()
-            elif dist_num == 1:
-                criteria.dist2_params = GaussianParams()
-        case "Exponential":
-            if dist_num == 0:
-                criteria.dist1_params = ExponentialParams()
-            elif dist_num == 1:
-                criteria.dist2_params = ExponentialParams()
+def change_dist_params(
+    state: AppState, criteria: CriteraParams, dist_type: str = "Log-Normal", dist_num: int = 0
+) -> None:
+    try:
+        param_cls = DIST_PARAM_CLASSES[dist_type]
+        attr_name = f"dist{dist_num}_params"
+        setattr(criteria, attr_name, param_cls())
+    except:
+        raise RuntimeError("Function class not reconised")
+
     state.run_optimizer = False
 
 
-def load_mode_solution(state: AppState, mode: str, soln: int):
+def load_mode_solution(state: AppState, mode: str, soln: int) -> None:
     file = Path(state.root_dir) / state.data_save_dir / f"data_output_{mode}_{soln}.pkl"
     with open(file, "rb") as f:
         mode_data = pickle.load(f)
@@ -234,18 +253,24 @@ def load_mode_solution(state: AppState, mode: str, soln: int):
             dist_type = c.dist_type[d]
             params = c.dist1_params if d == 0 else c.dist2_params
             st.session_state[f"dist_type_{i}_{d}"] = dist_type
-            if dist_type == "Log-Normal":
-                st.session_state[f"log_mode_{i}_{d}"] = params.mode
-                st.session_state[f"log_var_{i}_{d}"] = params.std
-                st.session_state[f"log_mu_{i}_{d}"] = params.scale
+            match dist_type:
+                case "Log-Normal":
+                    st.session_state[f"log_mode_{i}_{d}"] = params.mode
+                    st.session_state[f"log_var_{i}_{d}"] = params.std
+                    st.session_state[f"log_mu_{i}_{d}"] = params.scale
+                case "Gaussian":
+                    st.session_state[f"gauss_mode_{i}_{d}"] = params.mean
+                    st.session_state[f"gauss_var_{i}_{d}"] = params.std
+                    st.session_state[f"gauss_mu_{i}_{d}"] = params.scale
+                case "Exponential":
+                    st.session_state[f"exp_mode_{i}_{d}"] = params.power
+                    st.session_state[f"exp_mu_{i}_{d}"] = params.scale
+                case "Parabola":
+                    st.session_state[f"parabola_quad_{i}_{d}"]
+                    st.session_state[f"parabola_lin_{i}_{d}"]
 
-            elif dist_type == "Gaussian":
-                st.session_state[f"gauss_mode_{i}_{d}"] = params.mean
-                st.session_state[f"gauss_var_{i}_{d}"] = params.std
-                st.session_state[f"gauss_mu_{i}_{d}"] = params.scale
-
-            elif dist_type == "Exponential":
-                st.session_state[f"exp_mode_{i}_{d}"] = params.power
-                st.session_state[f"exp_mu_{i}_{d}"] = params.scale
+            st.session_state[f"xmin{i}_{d}"] = params.xmin
+            st.session_state[f"xmax{i}_{d}"] = params.xmax
+            st.session_state[f"offset_{i}_{d}"] = params.linear_offset
 
     st.rerun()

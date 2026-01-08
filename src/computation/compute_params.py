@@ -6,16 +6,18 @@ from src.class_setup.state import (
     ConvexOptSetup,
 )
 from src.util.utils import extract_ids, read_csv, calculate_params
-from src.computation.math_functions import (
-    calculate_theoretical_expectation,
-    calculate_mu_from_mode,
-    get_log_normal_pdf,
-    get_gaussian_pdf,
-    get_exp_pdf,
-    calculate_act_expectation,
-)
+from src.computation.math_functions import calculate_act_expectation
+from src.computation.distribution_assign import reset_optimizer_and_merge
 from src.class_setup.state import DistributionInput
 from src.class_setup.models import LogNormalParams
+from src.computation.distribution_assign import (
+    assign_log_normal,
+    assign_exponential,
+    assign_gaussian,
+    assign_parabola,
+    assign_linear,
+    assign_rect,
+)
 
 
 class SummaryGame:
@@ -29,18 +31,6 @@ class SummaryModes:
     def __init__(self, mode_ids: int = None, unique_payouts: int = None):
         self.mode_ids = mode_ids
         self.unique_payouts = unique_payouts
-
-
-def reset_optimizer_and_merge(state: AppState):
-    state.optimization_success = False
-    state.run_optimizer = False
-    state.merge_solutions = False
-    state.final_optimized_lookup = []
-    state.hr_ranges = {}
-    for c in state.criteria_list:
-        c.solved_weights = []
-        c.merged_dist = []
-        c.merged_dist_the = []
 
 
 def render_compute_params(state: AppState):
@@ -185,13 +175,11 @@ def render_target_dist_params(state: AppState):
                         key=f"dist1_mix_{i}",
                     )
                     c.dist2_mix = 1.0 - c.dist1_mix
-                else:
-                    c.num_dists = 1
 
                 for d in range(c.num_dists):
                     dist_type = st.radio(
                         "Distribution Type",
-                        ["Log-Normal", "Gaussian", "Exponential"],
+                        ["Log-Normal", "Gaussian", "Exponential", "Parabola", "Linear", "Rect"],
                         key=f"dist_type_{i}_{d}",
                         on_change=reset_optimizer_and_merge,
                         args=(state,),
@@ -205,222 +193,21 @@ def render_target_dist_params(state: AppState):
                     ythe, yact = [], []
                     with st.container(border=True):
                         st.write(f"Criteria: {c.name}")
-                        if c.dist_type[d] == "Log-Normal":
-                            def_mode = 1.0
-                            def_var = 0.1
-                            def_scale = 1.0  # to do: put in a global scaling factor
-                            if f"log_mode_{i}_{d}" in st.session_state:
-                                def_mode = st.session_state[f"log_mode_{i}_{d}"]
-                            if f"log_var_{i}_{d}" in st.session_state:
-                                def_var = st.session_state[f"log_var_{i}_{d}"]
-                            if f"log_mu_{i}_{d}" in st.session_state:
-                                def_mean = st.session_state[f"log_mu_{i}_{d}"]
-                            dist_params.mode = st.number_input(
-                                "Distribution Mode",
-                                0.0,
-                                1000.0 * state.cost,
-                                def_mode,
-                                0.01 * state.cost,
-                                key=f"log_mode_{i}_{d}",
-                                on_change=reset_optimizer_and_merge,
-                                args=(state,),
-                            )  # label,min,max,start,imcrement
-                            dist_params.std = st.number_input(
-                                "Distribution Variance",
-                                0.01,
-                                100.0,
-                                def_var,
-                                0.01,
-                                key=f"log_var_{i}_{d}",
-                                on_change=reset_optimizer_and_merge,
-                                args=(state,),
-                            )
-                            cc1, cc2, cc3 = st.columns(3)
-                            with cc1:
-                                dist_params.xmin = st.number_input(
-                                    "xmin", 0.0, max(c.xact), 0.0, key=f"xmin{i}_{d}"
-                                )
-                            with cc2:
-                                dist_params.xmax = st.number_input(
-                                    "xmax", 0.0, max(c.xact), max(c.xact), key=f"xmax_{i}_{d}"
-                                )
-                            with cc3:
-                                dist_params.linear_offset = st.number_input(
-                                    "offset", 0.0, max(c.xact), 0.0, key=f"offset_{i}_{d}"
-                                )
-                            # dist_params.scale = st.slider(
-                            #     "Distribution Scale",
-                            #     0.1,
-                            #     10.0,
-                            #     def_scale,
-                            #     0.1,
-                            #     key=f"log_mu_{i}_{d}",
-                            #     on_change=reset_optimizer_and_merge,
-                            #     args=(state,),
-                            # )
-                            dist_params.mean = calculate_mu_from_mode(dist_params.mode, dist_params.std)
-                            dist_params.the_exp = calculate_theoretical_expectation(
-                                dist_params.mode, dist_params.std
-                            )
 
-                            st.text(f"Target Mean: {round(dist_params.the_exp *(1.0 / c.hr) ,3)}")
-
-                            # compute the probability distribution
-                            ythe = get_log_normal_pdf(
-                                c.xthe,
-                                dist_params.mode,
-                                dist_params.std,
-                                1.0 / c.hr,
-                                dist_params.xmin,
-                                dist_params.xmax,
-                                dist_params.linear_offset,
-                            )
-                            yact = get_log_normal_pdf(
-                                c.xact,
-                                dist_params.mode,
-                                dist_params.std,
-                                1.0 / c.hr,
-                                dist_params.xmin,
-                                dist_params.xmax,
-                                dist_params.linear_offset,
-                            )
-
-                        elif c.dist_type[d] == "Gaussian":
-                            def_mean = state.cost
-                            def_std = 0.1
-                            def_scale = 1.0
-                            if f"gauss_mode_{i}_{d}" in st.session_state:
-                                def_mean = st.session_state[f"gauss_mode_{i}_{d}"]
-                            if f"gauss_var_{i}_{d}" in st.session_state:
-                                def_std = st.session_state[f"gauss_var_{i}_{d}"]
-                            if f"gauss_mu_{i}_{d}" in st.session_state:
-                                def_mean = st.session_state[f"gauss_mu_{i}_{d}"]
-                            dist_params.mean = st.number_input(
-                                "Distribution Mode",
-                                -10.0 * state.cost,
-                                1000.0 * state.cost,
-                                def_mean,
-                                0.01 * state.cost,
-                                key=f"gauss_mode_{i}_{d}",
-                                on_change=reset_optimizer_and_merge,
-                                args=(state,),
-                            )
-                            dist_params.std = st.number_input(
-                                "Distribution Standard Deviation",
-                                0.01,
-                                1000.0,
-                                def_std,
-                                0.01,
-                                key=f"gauss_var_{i}_{d}",
-                                on_change=reset_optimizer_and_merge,
-                                args=(state,),
-                            )
-                            cc1, cc2, cc3 = st.columns(3)
-                            with cc1:
-                                dist_params.xmin = st.number_input(
-                                    "xmin", 0.0, max(c.xact), 0.0, key=f"xmin{i}_{d}"
-                                )
-                            with cc2:
-                                dist_params.xmax = st.number_input(
-                                    "xmax", 0.0, max(c.xact), max(c.xact), key=f"xmax_{i}_{d}"
-                                )
-                            with cc3:
-                                dist_params.linear_offset = st.number_input(
-                                    "offset", 0.0, max(c.xact), 0.0, key=f"offset_{i}_{d}"
-                                )
-                            # dist_params.scale = st.slider(
-                            #     "Distribution Scale",
-                            #     0.1,
-                            #     10.0,
-                            #     def_scale,
-                            #     0.1,
-                            #     key=f"gauss_mu_{i}_{d}",
-                            #     on_change=reset_optimizer_and_merge,
-                            #     args=(state,),
-                            # )
-                            ythe = get_gaussian_pdf(
-                                c.xthe,
-                                dist_params.mean,
-                                dist_params.std,
-                                1.0 / c.hr,
-                                dist_params.xmin,
-                                dist_params.xmax,
-                                dist_params.linear_offset,
-                            )
-                            yact = get_gaussian_pdf(
-                                c.xact,
-                                dist_params.mean,
-                                dist_params.std,
-                                1.0 / c.hr,
-                                dist_params.xmin,
-                                dist_params.xmax,
-                                dist_params.linear_offset,
-                            )
-
-                        elif c.dist_type[d] == "Exponential":
-                            def_power = 1.0
-                            def_scale = 1.0
-                            if f"exp_mode_{i}_{d}" in st.session_state:
-                                def_power = st.session_state[f"exp_mode_{i}_{d}"]
-                            if f"exp_mu_{i}_{d}" in st.session_state:
-                                def_mean = st.session_state[f"exp_mu_{i}_{d}"]
-                            dist_params.power = st.number_input(
-                                "Exponential Power",
-                                0.01,
-                                10.0,
-                                def_power,
-                                0.01,
-                                key=f"exp_mode_{i}_{d}",
-                                on_change=reset_optimizer_and_merge,
-                                args=(state,),
-                            )
-                            cc1, cc2, cc3 = st.columns(3)
-                            with cc1:
-                                dist_params.xmin = st.number_input(
-                                    "xmin", 0.0, max(c.xact), 0.0, key=f"xmin{i}_{d}"
-                                )
-                            with cc2:
-                                dist_params.xmax = st.number_input(
-                                    "xmax", 0.0, max(c.xact), max(c.xact), key=f"xmax_{i}_{d}"
-                                )
-                            with cc3:
-                                dist_params.linear_offset = st.number_input(
-                                    "offset", 0.0, max(c.xact), 0.0, key=f"offset_{i}_{d}"
-                                )
-                            # dist_params.scale = st.slider(
-                            #     "Distribution Scale",
-                            #     0.1,
-                            #     10.0,
-                            #     def_scale,
-                            #     0.1,
-                            #     key=f"exp_mu_{i}_{d}",
-                            #     on_change=reset_optimizer_and_merge,
-                            #     args=(state,),
-                            # )
-
-                            ythe = get_exp_pdf(
-                                c.xthe,
-                                dist_params.power,
-                                1.0 / c.hr,
-                                dist_params.xmin,
-                                dist_params.xmax,
-                                dist_params.linear_offset,
-                            )
-                            yact = get_exp_pdf(
-                                c.xact,
-                                dist_params.power,
-                                1.0 / c.hr,
-                                dist_params.xmin,
-                                dist_params.xmax,
-                                dist_params.linear_offset,
-                            )
-
-                    if d == 0:
-                        c.dist1_params = dist_params
-                    elif d == 1:
-                        c.dist2_params = dist_params
-
+                        match c.dist_type[d]:
+                            case "Log-Normal":
+                                ythe, yact = assign_log_normal(state, dist_params, c, i, d)
+                            case "Gaussian":
+                                ythe, yact = assign_gaussian(state, dist_params, c, i, d)
+                            case "Exponential":
+                                ythe, yact = assign_exponential(state, dist_params, c, i, d)
+                            case "Parabola":
+                                ythe, yact = assign_parabola(state, dist_params, c, i, d)
+                            case "Linear":
+                                ythe, yact = assign_parabola(state, dist_params, c, i, d)
+                        setattr(c, f"dist{d}_params", dist_params)
                     c.dist_values[d] = DistributionInput(dist_type, c.xthe, c.xact, ythe, yact)
+
                 # mix stuff here
                 if c.num_dists == 1:
                     c.effective_rtp, c.effective_pdf = calculate_act_expectation(
