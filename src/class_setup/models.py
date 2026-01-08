@@ -7,6 +7,7 @@ class LogNormalParams:
     std: float = 1.0
     mean: float = 1.0
     scale: float = 1.0
+    linear_offset: float = 0.0
 
     the_exp: float = 0.0
 
@@ -23,6 +24,7 @@ class GaussianParams:
     mean: float = 1.0
     std: float = 1.0
     scale: float = 1.0
+    linear_offset: float = 0.0
 
     xmin: float = 0.0
     xmax: float = 0.0
@@ -32,6 +34,7 @@ class GaussianParams:
 class ExponentialParams:
     scale: float = 1.0
     power: float = 1.0
+    linear_offset: float = 0.0
 
     xmin: float = 0.0
     xmax: float = 0.0

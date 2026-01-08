@@ -81,7 +81,7 @@ class PlotSettings:
     criteria_name: str = ""
     xmin: float = 0.0
     xmax: float = 10.0
-    show_the_curve: bool = True
+    show_the_curve: bool = False
     show_solution: bool = False
     normalize_all: bool = False
     base_curves: bool = True

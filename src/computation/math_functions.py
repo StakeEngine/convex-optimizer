@@ -12,9 +12,9 @@ def get_log_normal(payouts, mode=50, mean=300):
     return pdf
 
 
-def get_log_normal_pdf(payouts, mode, std, scale, xmin, xmax):
+def get_log_normal_pdf(payouts, mode, std, scale, xmin, xmax, offset):
     # need to filter 0 payouts
-    x = np.array(payouts)
+    x = np.array([p - offset for p in payouts])
     x[x <= 0] = 1e-9
     pdf = (1 / (x * std * np.sqrt(2 * np.pi))) * np.exp(-((np.log(x / mode) - std**2) ** 2) / (2 * std**2))
 
@@ -28,8 +28,8 @@ def get_log_normal_pdf(payouts, mode, std, scale, xmin, xmax):
     return pdf_norm
 
 
-def get_gaussian_pdf(payouts, mean, std, scale, xmin, xmax):
-    x = np.asarray(payouts, dtype=float)
+def get_gaussian_pdf(payouts, mean, std, scale, xmin, xmax, offset):
+    x = np.asarray([p - offset for p in payouts], dtype=float)
     if std <= 0:
         raise ValueError("Standard deviation must be > 0")
 
@@ -43,12 +43,12 @@ def get_gaussian_pdf(payouts, mean, std, scale, xmin, xmax):
     return (pdf * scale).tolist()
 
 
-def get_exp_pdf(payouts, power, scale, xmin, xmax):
-    x = np.asarray(payouts, dtype=float)
-    pdf = np.exp(-1 * np.power(x, power))
+def get_exp_pdf(payouts, power, scale, xmin, xmax, offset):
+    x = np.asarray([p - offset for p in payouts], dtype=float)
+    pdf = np.exp(-np.power(x, power))
 
     mask = (x >= xmin) & (x <= xmax)
-    pdf = pdf * mask
+    pdf *= mask
     total = pdf.sum()
     pdf /= total
 
@@ -59,8 +59,8 @@ def calculate_mu_from_mode(mode, std):
     return math.log(mode) + std**2
 
 
-def calculate_expectation(payouts, mu, std, xmin, xmax):
-    pdf = get_log_normal_pdf(payouts, mu, std, 1.0, xmin, xmax)
+def calculate_expectation(payouts, mu, std, xmin, xmax, offset):
+    pdf = get_log_normal_pdf(payouts, mu, std, 1.0, xmin, xmax, offset)
     return np.sum(np.array(payouts) * pdf)
 
 
