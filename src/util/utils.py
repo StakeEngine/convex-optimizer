@@ -19,7 +19,7 @@ DistType = Literal[
     "Exponential",
     "Parabola",
     "Linear",
-    "Rectangle",
+    "Rect",
 ]
 
 DIST_PARAM_CLASSES: dict[DistType, Type] = {
@@ -28,7 +28,7 @@ DIST_PARAM_CLASSES: dict[DistType, Type] = {
     "Exponential": ExponentialParams,
     "Parabola": ParabolaParams,
     "Linear": LinearParams,
-    "Rectangle": RectParams,
+    "Rect": RectParams,
 }
 
 
@@ -258,19 +258,25 @@ def load_mode_solution(state: AppState, mode: str, soln: int) -> None:
                     st.session_state[f"log_mode_{i}_{d}"] = params.mode
                     st.session_state[f"log_var_{i}_{d}"] = params.std
                     st.session_state[f"log_mu_{i}_{d}"] = params.scale
+                    st.session_state[f"log_offset_{i}_{d}"] = params.linear_offset
                 case "Gaussian":
                     st.session_state[f"gauss_mode_{i}_{d}"] = params.mean
                     st.session_state[f"gauss_var_{i}_{d}"] = params.std
                     st.session_state[f"gauss_mu_{i}_{d}"] = params.scale
+                    st.session_state[f"gauss_offset_{i}_{d}"] = params.linear_offset
                 case "Exponential":
                     st.session_state[f"exp_mode_{i}_{d}"] = params.power
                     st.session_state[f"exp_mu_{i}_{d}"] = params.scale
+                    st.session_state[f"exp_offset_{i}_{d}"] = params.linear_offset
                 case "Parabola":
-                    st.session_state[f"parabola_quad_{i}_{d}"]
-                    st.session_state[f"parabola_lin_{i}_{d}"]
+                    st.session_state[f"parab_quad_{i}_{d}"]
+                    st.session_state[f"parab_lin_{i}_{d}"]
+                case "Linear":
+                    st.session_state[f"lin_{i}_{d}"]
+                case "Rect":
+                    st.session_state[f"rect_{i}_{d}"]
 
             st.session_state[f"xmin{i}_{d}"] = params.xmin
             st.session_state[f"xmax{i}_{d}"] = params.xmax
-            st.session_state[f"offset_{i}_{d}"] = params.linear_offset
 
     st.rerun()

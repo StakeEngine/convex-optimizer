@@ -7,6 +7,8 @@ from src.computation.math_functions import (
     get_gaussian_pdf,
     get_exp_pdf,
     get_quadratic_pdf,
+    get_linear_pdf,
+    get_rect_pdf,
 )
 from src.class_setup.models import (
     LogNormalParams,
@@ -68,7 +70,9 @@ def assign_log_normal(
             "xmax", 0.0, max(criteria.xact), max(criteria.xact), key=f"xmax_{i}_{d}"
         )
     with cc3:
-        dist_params.linear_offset = st.number_input("offset", 0.0, max(criteria.xact), 0.0, key=f"offset_{i}_{d}")
+        dist_params.linear_offset = st.number_input(
+            "offset", 0.0, max(criteria.xact), 0.0, key=f"log_offset_{i}_{d}"
+        )
 
     dist_params.mean = calculate_mu_from_mode(dist_params.mode, dist_params.std)
     dist_params.the_exp = calculate_theoretical_expectation(dist_params.mode, dist_params.std)
@@ -136,7 +140,7 @@ def assign_gaussian(
         )
     with cc3:
         dist_params.linear_offset = st.number_input(
-            "offset", -max(criteria.xact), max(criteria.xact), 0.0, key=f"offset_{i}_{d}"
+            "offset", -max(criteria.xact), max(criteria.xact), 0.0, key=f"gauss_offset_{i}_{d}"
         )
 
     ythe = get_gaussian_pdf(
@@ -187,7 +191,7 @@ def assign_exponential(
         )
     with cc3:
         dist_params.linear_offset = st.number_input(
-            "offset", -max(criteria.xact), max(criteria.xact), 0.0, key=f"offset_{i}_{d}"
+            "offset", -max(criteria.xact), max(criteria.xact), 0.0, key=f"exp_offset_{i}_{d}"
         )
 
     ythe = get_exp_pdf(
@@ -248,7 +252,7 @@ def assign_parabola(
         )
     with cc3:
         dist_params.linear_offset = st.number_input(
-            "offset", -max(criteria.xact), max(criteria.xact), 0.0, key=f"offset_{i}_{d}"
+            "offset", -max(criteria.xact), max(criteria.xact), 0.0, key=f"quad_offset_{i}_{d}"
         )
 
     ythe = get_quadratic_pdf(
@@ -299,22 +303,20 @@ def assign_linear(
         )
     with cc3:
         dist_params.linear_offset = st.number_input(
-            "offset", -max(criteria.xact), max(criteria.xact), 0.0, key=f"offset_{i}_{d}"
+            "offset", -max(criteria.xact), max(criteria.xact), 0.0, key=f"lin_offset_{i}_{d}"
         )
 
-    ythe = get_quadratic_pdf(
+    ythe = get_linear_pdf(
         criteria.xthe,
         1.0 / criteria.hr,
-        0.0,
         dist_params.lin_coef,
         dist_params.xmin,
         dist_params.xmax,
         dist_params.linear_offset,
     )
-    yact = get_quadratic_pdf(
+    yact = get_linear_pdf(
         criteria.xact,
         1.0 / criteria.hr,
-        0.0,
         dist_params.lin_coef,
         dist_params.xmin,
         dist_params.xmax,
@@ -324,5 +326,17 @@ def assign_linear(
     return ythe, yact
 
 
-def assign_rect(state: AppState, dist_params: object, criteria: CriteraParams, i: int, d: int) -> list[list]:
-    pass
+def assign_rect(dist_params: RectParams, criteria: CriteraParams, i: int, d: int) -> list[list]:
+
+    cc1, cc2 = st.columns(2)  # save these to state to reload
+    with cc1:
+        dist_params.xmin = st.number_input("xmin", 0.0, max(criteria.xact), 0.0, key=f"xmin{i}_{d}")
+    with cc2:
+        dist_params.xmax = st.number_input(
+            "xmax", 0.0, max(criteria.xact), max(criteria.xact), key=f"xmax_{i}_{d}"
+        )
+
+    yact = get_rect_pdf(criteria.xact, 1.0 / criteria.hr, dist_params.xmin, dist_params.xmax)
+    ythe = get_rect_pdf(criteria.xthe, 1.0 / criteria.hr, dist_params.xmin, dist_params.xmax)
+
+    return ythe, yact

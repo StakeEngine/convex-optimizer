@@ -204,7 +204,10 @@ def render_target_dist_params(state: AppState):
                             case "Parabola":
                                 ythe, yact = assign_parabola(state, dist_params, c, i, d)
                             case "Linear":
-                                ythe, yact = assign_parabola(state, dist_params, c, i, d)
+                                ythe, yact = assign_linear(state, dist_params, c, i, d)
+                            case "Rect":
+                                ythe, yact = assign_rect(dist_params, c, i, d)
+
                         setattr(c, f"dist{d}_params", dist_params)
                     c.dist_values[d] = DistributionInput(dist_type, c.xthe, c.xact, ythe, yact)
 
