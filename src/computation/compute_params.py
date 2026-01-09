@@ -5,7 +5,7 @@ from src.class_setup.state import (
     PlotSettings,
     ConvexOptSetup,
 )
-from src.util.utils import extract_ids, read_csv, calculate_params
+from src.util.utils import extract_ids, read_csv, calculate_params, DIST_PARAM_CLASSES
 from src.computation.math_functions import calculate_act_expectation
 from src.computation.distribution_assign import reset_optimizer_and_merge
 from src.class_setup.state import DistributionInput
@@ -14,7 +14,7 @@ from src.computation.distribution_assign import (
     assign_log_normal,
     assign_exponential,
     assign_gaussian,
-    assign_parabola,
+    assign_quadratic,
     assign_linear,
     assign_rect,
 )
@@ -134,9 +134,29 @@ def merge_dist_pdf(pdf1, pdf2, mix_factor, criteria_scale=1.0):
         final_pdf.append((mix_factor * x) + ((1 - mix_factor) * y))
 
     final_pdf = np.asarray(final_pdf)
+    final_pdf = np.clip(final_pdf, 0, None)
     final_pdf /= final_pdf.sum()
 
     return (final_pdf * criteria_scale).tolist()
+
+
+def ensure_dist_params(c, d):
+    dist_type = c.dist_type[d]
+    cls = DIST_PARAM_CLASSES[dist_type]
+
+    attr = f"dist{d}_params"
+    params = getattr(c, attr)
+
+    if isinstance(params, cls):
+        return params
+
+    new_params = cls()
+    for k, v in vars(params).items():
+        if hasattr(new_params, k):
+            setattr(new_params, k, v)
+
+    setattr(c, attr, new_params)
+    return new_params
 
 
 def render_target_dist_params(state: AppState):
@@ -172,6 +192,8 @@ def render_target_dist_params(state: AppState):
                         "Dist 1 Weight Factor",
                         0.0,
                         1.0,
+                        value=0.5,
+                        step=0.1,
                         key=f"dist1_mix_{i}",
                     )
                     c.dist2_mix = 1.0 - c.dist1_mix
@@ -179,18 +201,14 @@ def render_target_dist_params(state: AppState):
                     c.num_dists = 1
 
                 for d in range(c.num_dists):
-                    dist_type = st.radio(
+                    c.dist_type[d] = st.radio(
                         "Distribution Type",
-                        ["Log-Normal", "Gaussian", "Exponential", "Parabola", "Linear", "Rect"],
+                        list(DIST_PARAM_CLASSES.keys()),
                         key=f"dist_type_{i}_{d}",
                         on_change=reset_optimizer_and_merge,
                         args=(state,),
                     )
-                    c.dist_type[d] = st.session_state[f"dist_type_{i}_{d}"]
-                    # change_dist_params(state, dist_type)
-                    dist_params = c.dist1_params
-                    if d == 1:
-                        dist_params = c.dist2_params
+                    dist_params = ensure_dist_params(c, d)
 
                     ythe, yact = [], []
                     with st.container(border=True):
@@ -203,15 +221,15 @@ def render_target_dist_params(state: AppState):
                                 ythe, yact = assign_gaussian(state, dist_params, c, i, d)
                             case "Exponential":
                                 ythe, yact = assign_exponential(state, dist_params, c, i, d)
-                            case "Parabola":
-                                ythe, yact = assign_parabola(state, dist_params, c, i, d)
+                            case "Quadratic":
+                                ythe, yact = assign_quadratic(state, dist_params, c, i, d)
                             case "Linear":
                                 ythe, yact = assign_linear(state, dist_params, c, i, d)
                             case "Rect":
-                                ythe, yact = assign_rect(dist_params, c, i, d)
+                                ythe, yact = assign_rect(state, dist_params, c, i, d)
 
-                        setattr(c, f"dist{d}_params", dist_params)
-                    c.dist_values[d] = DistributionInput(dist_type, c.xthe, c.xact, ythe, yact)
+                        # setattr(c, f"dist{d}_params", dist_params)
+                    c.dist_values[d] = DistributionInput(c.dist_type[d], c.xthe, c.xact, ythe, yact)
 
                 # mix stuff here
                 if c.num_dists == 1:

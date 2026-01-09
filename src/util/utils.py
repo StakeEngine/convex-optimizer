@@ -3,7 +3,7 @@ import pickle
 from pathlib import Path
 from typing import Literal, Type
 import streamlit as st
-from src.class_setup.state import AppState, ModeData, CriteraParams
+from src.class_setup.state import AppState, ModeData, CriteraParams, DistributionInput
 from src.class_setup.models import (
     LogNormalParams,
     GaussianParams,
@@ -17,7 +17,7 @@ DistType = Literal[
     "Log-Normal",
     "Gaussian",
     "Exponential",
-    "Parabola",
+    "Quadratic",
     "Linear",
     "Rect",
 ]
@@ -26,7 +26,7 @@ DIST_PARAM_CLASSES: dict[DistType, Type] = {
     "Log-Normal": LogNormalParams,
     "Gaussian": GaussianParams,
     "Exponential": ExponentialParams,
-    "Parabola": ParabolaParams,
+    "Quadratic": ParabolaParams,
     "Linear": LinearParams,
     "Rect": RectParams,
 }
@@ -250,9 +250,10 @@ def load_mode_solution(state: AppState, mode: str, soln: int) -> None:
         st.session_state[f"dist1_mix_{i}"] = c.dist1_mix
 
         for d in range(c.num_dists):
+            st.session_state[f"dist_type_{i}_{d}"] = c.dist_type[d]
             dist_type = c.dist_type[d]
-            params = c.dist1_params if d == 0 else c.dist2_params
-            st.session_state[f"dist_type_{i}_{d}"] = dist_type
+            params = getattr(c, f"dist{d}_params")
+            print(params)
             match dist_type:
                 case "Log-Normal":
                     st.session_state[f"log_mode_{i}_{d}"] = params.mode
@@ -274,17 +275,21 @@ def load_mode_solution(state: AppState, mode: str, soln: int) -> None:
                     st.session_state[f"exp_offset_{i}_{d}"] = params.linear_offset
                     st.session_state[f"exp_xmin{i}_{d}"] = params.xmin
                     st.session_state[f"exp_xmax{i}_{d}"] = params.xmax
-                case "Parabola":
-                    st.session_state[f"parab_quad_{i}_{d}"] = params.quad_coef
-                    st.session_state[f"parab_lin_{i}_{d}"] = params.lin_coef
-                    st.session_state[f"parab_xmin{i}_{d}"] = params.xmin
-                    st.session_state[f"parab_xmax{i}_{d}"] = params.xmax
+                case "Quadratic":
+                    st.session_state[f"quadratic_quad_{i}_{d}"] = params.quad_coef
+                    st.session_state[f"quadratic_lin_{i}_{d}"] = params.lin_coef
+                    st.session_state[f"quadratic_offset_{i}_{d}"] = params.linear_offset
+                    st.session_state[f"quadratic_xmin{i}_{d}"] = params.xmin
+                    st.session_state[f"quadratic_xmax{i}_{d}"] = params.xmax
                 case "Linear":
                     st.session_state[f"lin_{i}_{d}"] = params.lin_coef
+                    st.session_state[f"lin_offset_{i}_{d}"] = params.linear_offset
                     st.session_state[f"lin_xmin{i}_{d}"] = params.xmin
                     st.session_state[f"lin_xmax{i}_{d}"] = params.xmax
                 case "Rect":
                     st.session_state[f"rect_xmin{i}_{d}"] = params.xmin
                     st.session_state[f"rect_xmax{i}_{d}"] = params.xmax
+                    st.session_state[f"rect_scale{i}_{d}"] = params.height
+                    st.session_state["rect_norm"] = params.normalized
 
     st.rerun()

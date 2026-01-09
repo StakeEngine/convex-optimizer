@@ -79,8 +79,8 @@ class CriteraParams:
     dist_values: dict = field(default_factory=dict)
     dist1_mix: float = field(default=0.5)
     dist2_mix: float = field(default=0.5)
+    dist0_params: DistParams = field(default_factory=LogNormalParams)
     dist1_params: DistParams = field(default_factory=LogNormalParams)
-    dist2_params: DistParams = field(default_factory=LogNormalParams)
     merged_dist: list = field(default_factory=list)
     merged_dist_the: list = field(default_factory=list)
 

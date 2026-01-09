@@ -38,7 +38,7 @@ def render_plots(state: AppState, containter):
                         "Plot Distribution Parts", value=True, key=f"plot_parts_{i}"
                     )
 
-                if c.num_dists == 1 and c.dist_type[i] in ["Parabola", "Linear", "Rect"]:
+                if c.num_dists == 1 and c.dist_type[i] in ["Quadratic", "Linear", "Rect"]:
                     st.warning(
                         "Parabolic, Linear and Exponential fits should only be used for mixed distribtuions.\n\nOptimization will likely fail with 1 distribution selected."
                     )
