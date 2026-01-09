@@ -336,8 +336,21 @@ def assign_linear(
     return ythe, yact
 
 
-def assign_rect(dist_params: RectParams, criteria: CriteraParams, i: int, d: int) -> list[list]:
+def assign_rect(state: AppState, dist_params: RectParams, criteria: CriteraParams, i: int, d: int) -> list[list]:
 
+    normalize = st.checkbox("Normalize", False, key="rect_norm")
+    if not normalize:
+        dist_params.height = st.number_input(
+            "Scale Coefficient",
+            -100.0,
+            100.0,
+            0.5,
+            0.1,
+            key=f"rect_scale_{i}_{d}",
+            format="%e",
+            on_change=reset_optimizer_and_merge,
+            args=(state,),
+        )
     cc1, cc2 = st.columns(2)  # save these to state to reload
     with cc1:
         dist_params.xmin = st.number_input("xmin", 0.0, max(criteria.xact), 0.0, key=f"rect_xmin{i}_{d}")
@@ -346,7 +359,11 @@ def assign_rect(dist_params: RectParams, criteria: CriteraParams, i: int, d: int
             "xmax", 0.0, max(criteria.xact), max(criteria.xact), key=f"rect_xmax_{i}_{d}"
         )
 
-    yact = get_rect_pdf(criteria.xact, 1.0 / criteria.hr, dist_params.xmin, dist_params.xmax)
-    ythe = get_rect_pdf(criteria.xthe, 1.0 / criteria.hr, dist_params.xmin, dist_params.xmax)
+    yact = get_rect_pdf(
+        criteria.xact, 1.0 / criteria.hr, dist_params.height, dist_params.xmin, dist_params.xmax, normalize
+    )
+    ythe = get_rect_pdf(
+        criteria.xthe, 1.0 / criteria.hr, dist_params.height, dist_params.xmin, dist_params.xmax, normalize
+    )
 
     return ythe, yact

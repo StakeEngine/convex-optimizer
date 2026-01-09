@@ -129,11 +129,12 @@ def get_linear_pdf(payouts, scale, lin, xmin, xmax, x_offset, normalize_curve=Fa
     return pdf.tolist()
 
 
-def get_rect_pdf(payouts, scale, xmin, xmax):
+def get_rect_pdf(payouts, scale, height, xmin, xmax, normalize_curve=False):
     x = np.asarray(payouts, float)
     pdf = ((x >= xmin) & (x <= xmax)).astype(float)
-
-    total = pdf.sum()
-    pdf *= scale / total
-
-    return pdf.tolist()
+    pdf *= height
+    if normalize_curve:
+        pdf /= pdf.sum()
+        return (scale * pdf).tolist()
+    else:
+        return pdf.tolist()
