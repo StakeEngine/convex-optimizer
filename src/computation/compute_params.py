@@ -5,7 +5,7 @@ from src.class_setup.state import (
     PlotSettings,
     ConvexOptSetup,
 )
-from src.util.utils import extract_ids, read_csv, calculate_params
+from src.util.utils import extract_ids, read_csv, calculate_params, DIST_PARAM_CLASSES
 from src.computation.math_functions import calculate_act_expectation
 from src.computation.distribution_assign import reset_optimizer_and_merge
 from src.class_setup.state import DistributionInput
@@ -140,6 +140,25 @@ def merge_dist_pdf(pdf1, pdf2, mix_factor, criteria_scale=1.0):
     return (final_pdf * criteria_scale).tolist()
 
 
+def ensure_dist_params(c, d):
+    dist_type = c.dist_type[d]
+    cls = DIST_PARAM_CLASSES[dist_type]
+
+    attr = f"dist{d}_params"
+    params = getattr(c, attr)
+
+    if isinstance(params, cls):
+        return params
+
+    new_params = cls()
+    for k, v in vars(params).items():
+        if hasattr(new_params, k):
+            setattr(new_params, k, v)
+
+    setattr(c, attr, new_params)
+    return new_params
+
+
 def render_target_dist_params(state: AppState):
     for i, c in enumerate(state.criteria_list):
         if any([c.rtp is None, c.hr is None, c.av is None]):
@@ -182,15 +201,14 @@ def render_target_dist_params(state: AppState):
                     c.num_dists = 1
 
                 for d in range(c.num_dists):
-                    dist_type = st.radio(
+                    c.dist_type[d] = st.radio(
                         "Distribution Type",
-                        ["Log-Normal", "Gaussian", "Exponential", "Quadratic", "Linear", "Rect"],
+                        list(DIST_PARAM_CLASSES.keys()),
                         key=f"dist_type_{i}_{d}",
                         on_change=reset_optimizer_and_merge,
                         args=(state,),
                     )
-                    c.dist_type[d] = st.session_state[f"dist_type_{i}_{d}"]
-                    dist_params = getattr(c, f"dist{d}_params")
+                    dist_params = ensure_dist_params(c, d)
 
                     ythe, yact = [], []
                     with st.container(border=True):
@@ -210,8 +228,8 @@ def render_target_dist_params(state: AppState):
                             case "Rect":
                                 ythe, yact = assign_rect(state, dist_params, c, i, d)
 
-                        setattr(c, f"dist{d}_params", dist_params)
-                    c.dist_values[d] = DistributionInput(dist_type, c.xthe, c.xact, ythe, yact)
+                        # setattr(c, f"dist{d}_params", dist_params)
+                    c.dist_values[d] = DistributionInput(c.dist_type[d], c.xthe, c.xact, ythe, yact)
 
                 # mix stuff here
                 if c.num_dists == 1:

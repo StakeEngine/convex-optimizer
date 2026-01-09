@@ -250,6 +250,7 @@ def load_mode_solution(state: AppState, mode: str, soln: int) -> None:
         st.session_state[f"dist1_mix_{i}"] = c.dist1_mix
 
         for d in range(c.num_dists):
+            st.session_state[f"dist_type_{i}_{d}"] = c.dist_type[d]
             dist_type = c.dist_type[d]
             params = getattr(c, f"dist{d}_params")
             print(params)
@@ -290,4 +291,5 @@ def load_mode_solution(state: AppState, mode: str, soln: int) -> None:
                     st.session_state[f"rect_xmax{i}_{d}"] = params.xmax
                     st.session_state[f"rect_scale{i}_{d}"] = params.height
                     st.session_state["rect_norm"] = params.normalized
+
     st.rerun()
