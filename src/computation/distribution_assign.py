@@ -179,6 +179,7 @@ def assign_exponential(
         def_power,
         0.1,
         key=f"exp_mode_{i}_{d}",
+        format="%f",
         on_change=reset_optimizer_and_merge,
         args=(state,),
     )
@@ -214,41 +215,46 @@ def assign_exponential(
     return ythe, yact
 
 
-def assign_parabola(
+def assign_quadratic(
     state: AppState, dist_params: ParabolaParams, criteria: CriteraParams, i: int, d: int
 ) -> list[list]:
     def_quad = 1.0
     def_lin = 1.0
-    if f"parab_quad_{i}_{d}" in st.session_state:
-        def_quad = st.session_state[f"parab_quad_{i}_{d}"]
-    if f"parab_lin_{i}_{d}" in st.session_state:
-        def_lin = st.session_state[f"parab_lin_{i}_{d}"]
-    dist_params.quad_coef = st.number_input(
-        "Square Coefficient",
-        -100 * state.cost,
-        100.0 * state.cost,
-        def_quad,
-        0.1 * state.cost,
-        key=f"parab_quad_{i}_{d}",
-        on_change=reset_optimizer_and_merge,
-        args=(state,),
-    )
-    dist_params.lin_coef = st.number_input(
-        "Linear Coefficient",
-        -100.0 * state.cost,
-        100.0 * state.cost,
-        def_lin,
-        0.1,
-        key=f"parab_lin_{i}_{d}",
-        on_change=reset_optimizer_and_merge,
-        args=(state,),
-    )
+    if f"quadratic_quad_{i}_{d}" in st.session_state:
+        def_quad = st.session_state[f"quadratic_quad_{i}_{d}"]
+    if f"quadratic_lin_{i}_{d}" in st.session_state:
+        def_lin = st.session_state[f"quadratic_lin_{i}_{d}"]
+
+    normalize = st.checkbox("Normalize", False, key="quadratic_norm")
+    if not normalize:
+        dist_params.quad_coef = st.number_input(
+            "Square Coefficient",
+            -100 * state.cost,
+            100.0 * state.cost,
+            def_quad,
+            0.1 * state.cost,
+            key=f"quadratic_quad_{i}_{d}",
+            format="%e",
+            on_change=reset_optimizer_and_merge,
+            args=(state,),
+        )
+        dist_params.lin_coef = st.number_input(
+            "Linear Coefficient",
+            -100.0 * state.cost,
+            100.0 * state.cost,
+            def_lin,
+            0.1,
+            key=f"quadratic_lin_{i}_{d}",
+            format="%e",
+            on_change=reset_optimizer_and_merge,
+            args=(state,),
+        )
     cc1, cc2, cc3 = st.columns(3)  # save these to state to reload
     with cc1:
-        dist_params.xmin = st.number_input("xmin", 0.0, max(criteria.xact), 0.0, key=f"parab_xmin{i}_{d}")
+        dist_params.xmin = st.number_input("xmin", 0.0, max(criteria.xact), 0.0, key=f"quadratic_xmin{i}_{d}")
     with cc2:
         dist_params.xmax = st.number_input(
-            "xmax", 0.0, max(criteria.xact), max(criteria.xact), key=f"parab_xmax_{i}_{d}"
+            "xmax", 0.0, max(criteria.xact), max(criteria.xact), key=f"quadratic_xmax_{i}_{d}"
         )
     with cc3:
         dist_params.linear_offset = st.number_input(
@@ -283,17 +289,19 @@ def assign_linear(
     def_lin = 1.0
     if f"lin_{i}_{d}" in st.session_state:
         def_lin = st.session_state[f"lin_{i}_{d}"]
-
-    dist_params.lin_coef = st.number_input(
-        "Linear Coefficient",
-        -100.0 * state.cost,
-        100.0 * state.cost,
-        def_lin,
-        0.1,
-        key=f"lin_{i}_{d}",
-        on_change=reset_optimizer_and_merge,
-        args=(state,),
-    )
+    normalize = st.checkbox("Normalize", key="linear_normalize")
+    if not normalize:
+        dist_params.lin_coef = st.number_input(
+            "Linear Coefficient",
+            -100.0 * state.cost,
+            100.0 * state.cost,
+            def_lin,
+            0.1,
+            key=f"lin_{i}_{d}",
+            format="%e",
+            on_change=reset_optimizer_and_merge,
+            args=(state,),
+        )
     cc1, cc2, cc3 = st.columns(3)  # save these to state to reload
     with cc1:
         dist_params.xmin = st.number_input("xmin", 0.0, max(criteria.xact), 0.0, key=f"lin_xmin{i}_{d}")
@@ -303,7 +311,7 @@ def assign_linear(
         )
     with cc3:
         dist_params.linear_offset = st.number_input(
-            "offset", -max(criteria.xact), max(criteria.xact), 0.0, key=f"lin_offset_{i}_{d}"
+            "offset", -max(criteria.xact), max(criteria.xact), 0.0, key=f"quad_offset_{i}_{d}"
         )
 
     ythe = get_linear_pdf(
@@ -313,6 +321,7 @@ def assign_linear(
         dist_params.xmin,
         dist_params.xmax,
         dist_params.linear_offset,
+        normalize,
     )
     yact = get_linear_pdf(
         criteria.xact,
@@ -321,6 +330,7 @@ def assign_linear(
         dist_params.xmin,
         dist_params.xmax,
         dist_params.linear_offset,
+        normalize,
     )
 
     return ythe, yact

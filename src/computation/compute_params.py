@@ -14,7 +14,7 @@ from src.computation.distribution_assign import (
     assign_log_normal,
     assign_exponential,
     assign_gaussian,
-    assign_parabola,
+    assign_quadratic,
     assign_linear,
     assign_rect,
 )
@@ -181,7 +181,7 @@ def render_target_dist_params(state: AppState):
                 for d in range(c.num_dists):
                     dist_type = st.radio(
                         "Distribution Type",
-                        ["Log-Normal", "Gaussian", "Exponential", "Parabola", "Linear", "Rect"],
+                        ["Log-Normal", "Gaussian", "Exponential", "Quadratic", "Linear", "Rect"],
                         key=f"dist_type_{i}_{d}",
                         on_change=reset_optimizer_and_merge,
                         args=(state,),
@@ -203,8 +203,8 @@ def render_target_dist_params(state: AppState):
                                 ythe, yact = assign_gaussian(state, dist_params, c, i, d)
                             case "Exponential":
                                 ythe, yact = assign_exponential(state, dist_params, c, i, d)
-                            case "Parabola":
-                                ythe, yact = assign_parabola(state, dist_params, c, i, d)
+                            case "Quadratic":
+                                ythe, yact = assign_quadratic(state, dist_params, c, i, d)
                             case "Linear":
                                 ythe, yact = assign_linear(state, dist_params, c, i, d)
                             case "Rect":

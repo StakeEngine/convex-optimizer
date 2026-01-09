@@ -17,7 +17,7 @@ DistType = Literal[
     "Log-Normal",
     "Gaussian",
     "Exponential",
-    "Parabola",
+    "Quadratic",
     "Linear",
     "Rect",
 ]
@@ -26,7 +26,7 @@ DIST_PARAM_CLASSES: dict[DistType, Type] = {
     "Log-Normal": LogNormalParams,
     "Gaussian": GaussianParams,
     "Exponential": ExponentialParams,
-    "Parabola": ParabolaParams,
+    "Quadratic": ParabolaParams,
     "Linear": LinearParams,
     "Rect": RectParams,
 }
@@ -274,11 +274,11 @@ def load_mode_solution(state: AppState, mode: str, soln: int) -> None:
                     st.session_state[f"exp_offset_{i}_{d}"] = params.linear_offset
                     st.session_state[f"exp_xmin{i}_{d}"] = params.xmin
                     st.session_state[f"exp_xmax{i}_{d}"] = params.xmax
-                case "Parabola":
-                    st.session_state[f"parab_quad_{i}_{d}"] = params.quad_coef
-                    st.session_state[f"parab_lin_{i}_{d}"] = params.lin_coef
-                    st.session_state[f"parab_xmin{i}_{d}"] = params.xmin
-                    st.session_state[f"parab_xmax{i}_{d}"] = params.xmax
+                case "Quadratic":
+                    st.session_state[f"quadratic_quad_{i}_{d}"] = params.quad_coef
+                    st.session_state[f"quadratic_lin_{i}_{d}"] = params.lin_coef
+                    st.session_state[f"quadratic_xmin{i}_{d}"] = params.xmin
+                    st.session_state[f"quadratic_xmax{i}_{d}"] = params.xmax
                 case "Linear":
                     st.session_state[f"lin_{i}_{d}"] = params.lin_coef
                     st.session_state[f"lin_xmin{i}_{d}"] = params.xmin
