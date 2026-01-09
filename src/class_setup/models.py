@@ -65,3 +65,4 @@ class RectParams:
     xmin: float = 0.0
     xmax: float = 0.0
     height: float = 0.0
+    normalized: bool = False

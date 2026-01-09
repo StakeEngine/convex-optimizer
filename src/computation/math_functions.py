@@ -110,6 +110,7 @@ def get_quadratic_pdf(payouts, scale, quad, lin, xmin, xmax, offset, normalize_c
     mask = (x >= xmin) & (x <= xmax)
     pdf *= mask
     if normalize_curve:
+        pdf = np.clip(pdf, 1e-12, None)
         pdf /= pdf.sum()
         return (pdf * scale).tolist()
     else:
@@ -122,8 +123,8 @@ def get_linear_pdf(payouts, scale, lin, xmin, xmax, x_offset, normalize_curve=Fa
     pdf = lin * (x - x_offset)
     pdf = np.where((x >= xmin) & (x <= xmax), pdf, 0.0)
 
-    pdf = np.clip(pdf, 1e-12, None)
     if normalize_curve:
+        pdf = np.clip(pdf, 1e-12, None)
         pdf = pdf * (scale / pdf.sum())
 
     return pdf.tolist()
@@ -134,6 +135,7 @@ def get_rect_pdf(payouts, scale, height, xmin, xmax, normalize_curve=False):
     pdf = ((x >= xmin) & (x <= xmax)).astype(float)
     pdf *= height
     if normalize_curve:
+        pdf = np.clip(pdf, 1e-12, None)
         pdf /= pdf.sum()
         return (scale * pdf).tolist()
     else:

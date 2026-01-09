@@ -134,6 +134,7 @@ def merge_dist_pdf(pdf1, pdf2, mix_factor, criteria_scale=1.0):
         final_pdf.append((mix_factor * x) + ((1 - mix_factor) * y))
 
     final_pdf = np.asarray(final_pdf)
+    final_pdf = np.clip(final_pdf, 0, None)
     final_pdf /= final_pdf.sum()
 
     return (final_pdf * criteria_scale).tolist()
@@ -172,6 +173,8 @@ def render_target_dist_params(state: AppState):
                         "Dist 1 Weight Factor",
                         0.0,
                         1.0,
+                        value=0.5,
+                        step=0.1,
                         key=f"dist1_mix_{i}",
                     )
                     c.dist2_mix = 1.0 - c.dist1_mix
@@ -187,10 +190,7 @@ def render_target_dist_params(state: AppState):
                         args=(state,),
                     )
                     c.dist_type[d] = st.session_state[f"dist_type_{i}_{d}"]
-                    # change_dist_params(state, dist_type)
-                    dist_params = c.dist1_params
-                    if d == 1:
-                        dist_params = c.dist2_params
+                    dist_params = getattr(c, f"dist{d}_params")
 
                     ythe, yact = [], []
                     with st.container(border=True):
