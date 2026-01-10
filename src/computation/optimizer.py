@@ -98,11 +98,12 @@ def render_optimizer_results(state: AppState):
             c.criteria_hr_dict = hit_rates_ranges(c.xact, c.solved_weights)
 
     with st.expander("Criteria-Seperated Hit-Rates"):
-        for c in state.criteria_list:
-            hr_json = {}
-            for r, val in c.criteria_hr_dict.items():
-                hr_json[str(r)] = round(val, 3)
-            st.json(hr_json)
+        for i, c in enumerate(state.criteria_list):
+            if len(state.dist_objects[i].unique_payouts) > 1:
+                hr_json = {}
+                for r, val in c.criteria_hr_dict.items():
+                    hr_json[str(r)] = round(val, 3)
+                st.json(hr_json)
 
 
 def merge_solutions(state: AppState):

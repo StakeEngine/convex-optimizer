@@ -90,7 +90,7 @@ def render_criteria_params(state: AppState):
             "RTP",
             key=f"rtp_{i}",
             value=st.session_state.get(f"rtp_{i}", criteria.rtp),
-            step=0.001,
+            step=0.01,
         )
 
         col2.number_input(
