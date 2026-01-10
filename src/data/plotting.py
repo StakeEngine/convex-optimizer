@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
+import pandas as pd
 import streamlit as st
 from src.class_setup.state import AppState
+from src.util.utils import hit_rates_ranges
 
 
 def render_plots(state: AppState, containter):
@@ -8,42 +10,42 @@ def render_plots(state: AppState, containter):
     if state.set_params:
         for i, c in enumerate(state.criteria_list):
             if len(c.xact) > 10:  # look at why there is sometimes a 0 win for set win amount
-                plot_params = state.plot_params[i]
-                xmin_disp, xmax_disp = containter.columns(2)
-                plot_params.xmin = xmin_disp.number_input(
-                    label="min x-axis", value=0, key=f"min_x_plot_{i}", width=150
-                )
-                plot_params.xmax = xmax_disp.number_input(
-                    label="max x-axis", value=10 * state.cost, key=f"max_x_plot_{i}", width=150
-                )
-
-                c1, c2, c3, c4 = containter.columns(4)
-                plot_params.show_the_curve = c1.checkbox(
-                    "Plot Theoretical Curve",
-                    value=plot_params.show_the_curve,
-                    key=f"plot_the_{i}",
-                )
-                plot_params.normalize_all = c2.checkbox(
-                    "Normalize Curves",
-                    value=plot_params.normalize_all,
-                    key=f"normalize_{i}",
-                )
-                plot_params.log_scale = c3.checkbox(
-                    "Log Scale",
-                    value=plot_params.log_scale,
-                    key=f"log_scale_{i}",
-                )
-                if len(c.merged_dist) > 0:
-                    plot_params.base_curves = c4.checkbox(
-                        "Plot Distribution Parts", value=True, key=f"plot_parts_{i}"
-                    )
-
-                if c.num_dists == 1 and c.dist_type[i] in ["Quadratic", "Linear", "Rect"]:
-                    st.warning(
-                        "Parabolic, Linear and Exponential fits should only be used for mixed distribtuions.\n\nOptimization will likely fail with 1 distribution selected."
-                    )
-
                 with st.container():
+                    plot_params = state.plot_params[i]
+                    xmin_disp, xmax_disp = containter.columns(2)
+                    plot_params.xmin = xmin_disp.number_input(
+                        label="min x-axis", value=0, key=f"min_x_plot_{i}", width=150
+                    )
+                    plot_params.xmax = xmax_disp.number_input(
+                        label="max x-axis", value=10 * state.cost, step=10.0, key=f"max_x_plot_{i}", width=150
+                    )
+
+                    c1, c2, c3, c4 = containter.columns(4)
+                    plot_params.show_the_curve = c1.checkbox(
+                        "Plot Theoretical Curve",
+                        value=plot_params.show_the_curve,
+                        key=f"plot_the_{i}",
+                    )
+                    plot_params.normalize_all = c2.checkbox(
+                        "Normalize Curves",
+                        value=plot_params.normalize_all,
+                        key=f"normalize_{i}",
+                    )
+                    plot_params.log_scale = c3.checkbox(
+                        "Log Scale",
+                        value=plot_params.log_scale,
+                        key=f"log_scale_{i}",
+                    )
+                    if len(c.merged_dist) > 0:
+                        plot_params.base_curves = c4.checkbox(
+                            "Plot Distribution Parts", value=True, key=f"plot_parts_{i}"
+                        )
+
+                    if c.num_dists == 1 and c.dist_type[i] in ["Quadratic", "Linear", "Rect"]:
+                        st.warning(
+                            "Parabolic, Linear and Exponential fits should only be used for mixed distribtuions.\n\nOptimization will likely fail with 1 distribution selected."
+                        )
+
                     fig, ax = plt.subplots()
                     if plot_params.base_curves:
                         for d in range(c.num_dists):
@@ -139,5 +141,20 @@ def render_plots(state: AppState, containter):
                     ax.grid(True)
                     ax.set_xlabel("payout value")
                     ax.set_ylabel("payout probability")
+
                     containter.pyplot(fig)
                     st.space()
+
+                    if len(c.xact) > 1:
+                        with containter.expander("Target Distribtuion Hit-Rates"):
+                            if len(c.merged_dist) > 0:
+                                x, y = c.xact, yact_merge
+                            else:
+                                x, y = c.dist_values[d].xact, c.dist_values[0].yact
+
+                            hr_ranges = hit_rates_ranges(x, y, False)
+                            df = pd.DataFrame(
+                                {"Win Range": hr_ranges.keys(), "Hit-Rate": hr_ranges.values()},
+                            )
+                            df["Hit-Rate"] = df["Hit-Rate"].map(lambda x: f"{x:.2e}" if x > 1e6 else round(x, 2))
+                            st.table(df)

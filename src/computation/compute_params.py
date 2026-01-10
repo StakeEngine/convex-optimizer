@@ -78,7 +78,7 @@ def render_compute_params(state: AppState):
             if len(o.unique_payouts) == 1:
                 with st.container():
                     st.warning(
-                        "Criteria has 1 unique payout - distribution fits not avalaliable. \n\nProbabilty will be automatically assigned based on hit-rate and RTP contribution."
+                        f"Criteria [{o.criteria}] has 1 unique payout - distribution fits not avalaliable. \n\nProbabilty will be automatically assigned based on hit-rate and RTP contribution."
                     )
 
         if len(o.unique_payouts) == 0 or len(o.book_ids) == 0:
@@ -175,6 +175,7 @@ def render_target_dist_params(state: AppState):
         c.xact = [round(y, 2) for y in dist_object.unique_payouts]
         with st.sidebar:
             if len(state.dist_objects[i].unique_payouts) > 1:
+                st.subheader(f"{c.name}")
                 if f"checkbox_{i}" not in st.session_state:
                     st.session_state[f"checkbox_{i}"] = c.is_2_dist
 

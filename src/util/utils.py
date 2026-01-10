@@ -3,7 +3,8 @@ import pickle
 from pathlib import Path
 from typing import Literal, Type
 import streamlit as st
-from src.class_setup.state import AppState, ModeData, CriteraParams, DistributionInput
+import pandas as pd
+from src.class_setup.state import AppState, ModeData, CriteraParams
 from src.class_setup.models import (
     LogNormalParams,
     GaussianParams,
@@ -80,7 +81,7 @@ def get_uniuqe_payouts_from_lut(state: AppState, books: list) -> list:
     return payouts
 
 
-def hit_rates_ranges(payouts: list, weights: list) -> dict:
+def hit_rates_ranges(payouts: list, weights: list, normalize: bool = True) -> dict:
     ranges = [
         (0.0, 0.1),
         (0.1, 1.0),
@@ -107,7 +108,9 @@ def hit_rates_ranges(payouts: list, weights: list) -> dict:
         else:
             break
 
-    total_weight = sum(weights)
+    total_weight = 1.0
+    if normalize:
+        total_weight = sum(weights)
 
     for p, w in zip(payouts, weights):
         for r in ranges:
@@ -177,10 +180,9 @@ def write_optimized_lookup(state: AppState) -> None:
 
 def print_optimized_hr_table(state: AppState) -> None:
     with st.container(border=True):
-        print_hr = {}
-        for raange, h in state.hr_ranges.items():
-            st.write(f"{raange}: {h}")
-            print_hr[str(raange)] = round(h, 3)
+        df = pd.DataFrame({"Win Range": state.hr_ranges.keys(), "Hit Rates": state.hr_ranges.values()})
+        df["Hit Rates"] = df["Hit Rates"].map(lambda x: f"{x:.2e}" if x > 1e6 else (round(x, 4)))
+        st.table(df)
 
 
 def save_mode_solution(state: AppState) -> None:

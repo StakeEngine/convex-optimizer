@@ -49,7 +49,6 @@ if state.set_params:
 
     with st.container(border=True):
         render_target_dist_params(state)
-
         plt_container = st.container()
         render_plots(state, plt_container)
 
