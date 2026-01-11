@@ -1,4 +1,6 @@
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
+import numpy as np
 import pandas as pd
 import streamlit as st
 from src.class_setup.state import AppState
@@ -6,9 +8,10 @@ from src.util.utils import hit_rates_ranges
 
 
 def render_plots(state: AppState, containter):
-    colours = ["blue", "purple"]
+    # colours = ["blue", "purple", "orange", "black"]
     if state.set_params:
         for i, c in enumerate(state.criteria_list):
+            colours = cm.get_cmap("viridis", c.num_dists)(np.linspace(0, 1, c.num_dists))
             if len(c.xact) > 10:  # look at why there is sometimes a 0 win for set win amount
                 with st.container():
                     plot_params = state.plot_params[i]

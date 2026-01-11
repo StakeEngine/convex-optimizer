@@ -45,7 +45,7 @@ def solve_optimizer(state: AppState):
                 "rtp": float(c.xact[0] * c.solved_weights[0]) / state.cost,
             }
         else:
-            if c.num_dists == 2:
+            if c.num_dists > 1:
                 w0 = np.array(c.merged_dist)
             else:
                 w0 = np.array(c.dist_values[0].yact)
