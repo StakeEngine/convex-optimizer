@@ -45,7 +45,7 @@ def solve_optimizer(state: AppState):
                 "rtp": float(c.xact[0] * c.solved_weights[0]) / state.cost,
             }
         else:
-            if c.num_dists == 2:
+            if c.num_dists > 1:
                 w0 = np.array(c.merged_dist)
             else:
                 w0 = np.array(c.dist_values[0].yact)
@@ -113,8 +113,7 @@ def merge_solutions(state: AppState):
     for i, d in enumerate(state.criteria_list):
 
         criteria_prob[d.name] = 1.0 / d.hr
-        unique_weights = dict(zip(d.dist_values[0].xact, d.solved_weights))
-
+        unique_weights = dict(zip(d.xact, d.solved_weights))
         d.optimized_unique_distribution = unique_weights
 
         unique_counter = {}

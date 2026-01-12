@@ -73,9 +73,12 @@ class CriteraParams:
     effective_rtp: float = 0.0
     effective_pdf: list[float] = field(default_factory=list)
     plot_log_scale: bool = False
-    dist_type: list[str] = field(default_factory=lambda: ["Log-Normal", "Gaussian", "Exponential"])
+    dist_type: list[str] = field(
+        default_factory=lambda: ["Log-Normal", "Gaussian", "Exponential", "Quadratic", "Linear", "Rect"]
+    )
     num_dists = 1
-    is_2_dist: bool = False
+    multi_dist: bool = False
+    multi_dist_weights: list[float] = field(default_factory=list)
     dist_values: dict = field(default_factory=dict)
     dist1_mix: float = field(default=0.5)
     dist2_mix: float = field(default=0.5)

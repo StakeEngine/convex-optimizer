@@ -114,7 +114,7 @@ def render_compute_params(state: AppState):
             st.write(
                 f"Game Info: \n\nLookup length: {summaryObj.lookup_length} \n\nNum Zero-IDs: {summaryObj.zero_id_len}"
             )
-            st.warning(f"{len(remaining_sim_ids)} non-zero ids without matching criteria!")
+            st.warning(f"{len(remaining_sim_ids)} non-zero (unused) ids without matching criteria")
         for i, o in enumerate(state.dist_objects):
             st.space()
             with st.container():
@@ -140,17 +140,46 @@ def merge_dist_pdf(pdf1, pdf2, mix_factor, criteria_scale=1.0):
     return (final_pdf * criteria_scale).tolist()
 
 
+def merge_multi_dist(
+    payouts: list,
+    pdf_dict: dict[int, list],
+    mix_factors: list[float],
+    criteria_scale: float,
+):
+    assert len(pdf_dict) == len(mix_factors), "weight array length does not match number of input pdfs"
+
+    final_pdf = []
+
+    for idx in range(len(payouts)):
+        pdf_val = 0.0
+        for k, w in enumerate(mix_factors):
+            pdf_val += w * pdf_dict[k][idx]
+        final_pdf.append(pdf_val)
+
+    pdf = np.asarray(final_pdf)
+    pdf = np.clip(pdf, 0, None)
+
+    pdf /= pdf.sum()
+
+    return (pdf * criteria_scale).tolist()
+
+
 def ensure_dist_params(c, d):
     dist_type = c.dist_type[d]
     cls = DIST_PARAM_CLASSES[dist_type]
 
     attr = f"dist{d}_params"
-    params = getattr(c, attr)
+    params = getattr(c, attr, None)
+    if params is None:
+        params = cls()
+        setattr(c, attr, params)
+        return params
 
     if isinstance(params, cls):
         return params
 
     new_params = cls()
+
     for k, v in vars(params).items():
         if hasattr(new_params, k):
             setattr(new_params, k, v)
@@ -177,37 +206,57 @@ def render_target_dist_params(state: AppState):
             if len(state.dist_objects[i].unique_payouts) > 1:
                 st.subheader(f"{c.name}")
                 if f"checkbox_{i}" not in st.session_state:
-                    st.session_state[f"checkbox_{i}"] = c.is_2_dist
+                    st.session_state[f"checkbox_{i}"] = c.multi_dist
 
-                c.is_2_dist = st.checkbox(
-                    "Use 2 distribtuions",
+                c.multi_dist = st.checkbox(
+                    "Use Multiple Distributions",
                     key=f"checkbox_{i}",
                 )
 
-                if c.is_2_dist:
-                    c.num_dists = 2
-                    if f"dist1_mix_{i}" not in st.session_state:
-                        st.session_state[f"dist1_mix_{i}"] = c.dist1_mix
-
-                    c.dist1_mix = st.number_input(
-                        "Dist 1 Weight Factor",
-                        0.0,
-                        1.0,
-                        value=0.5,
-                        step=0.1,
-                        key=f"dist1_mix_{i}",
+                if c.multi_dist:
+                    c.num_dists = st.number_input(
+                        "Distribution Count", 2, 5, 2, 1, width=150, key=f"dists_used_{i}"
                     )
-                    c.dist2_mix = 1.0 - c.dist1_mix
-                else:
-                    c.num_dists = 1
+                    if c.num_dists == 2:
+                        c.dist1_mix = st.number_input(
+                            "Dist 1 Weight Factor", 0.0, 1.0, value=0.5, step=0.1, key=f"dist1_mix_{i}", width=150
+                        )
+                        c.dist2_mix = 1.0 - c.dist1_mix
+                        st.write(f"Dist 2 Weight: {c.dist2_mix}")
+                    elif c.num_dists > 2:
+                        key = f"multi_dist_weights_{i}"
+                        st.session_state[key] = [0.5] * c.num_dists
+
+                        c.multi_dist_weights = st.session_state[key]
+                        for start in range(0, c.num_dists, 3):
+                            cols = st.columns(3)
+                            for j in range(3):
+                                idx = start + j
+                                if idx >= c.num_dists:
+                                    break
+
+                                with cols[j]:
+                                    c.multi_dist_weights[idx] = st.number_input(
+                                        f"Dist {idx+1} weight",
+                                        min_value=0.0,
+                                        max_value=100.0,
+                                        value=0.5,
+                                        width=100,
+                                        key=f"dist_weight_{i}_{idx}",
+                                    )
+                        tw = sum(c.multi_dist_weights)
+                        c.multi_dist_weights = [x / tw for x in c.multi_dist_weights]
+                    else:
+                        c.num_dists = 1
 
                 for d in range(c.num_dists):
-                    c.dist_type[d] = st.radio(
-                        "Distribution Type",
+                    c.dist_type[d] = st.selectbox(
+                        "Function Type",
                         list(DIST_PARAM_CLASSES.keys()),
                         key=f"dist_type_{i}_{d}",
                         on_change=reset_optimizer_and_merge,
                         args=(state,),
+                        width=150,
                     )
                     dist_params = ensure_dist_params(c, d)
 
@@ -248,6 +297,17 @@ def render_target_dist_params(state: AppState):
                     c.effective_rtp, c.effective_pdf = calculate_act_expectation(c.xact, ymergedact, state.cost)
                     c.merged_dist = ymergedact
                     c.merged_dist_the = ymergedthe
+                elif c.num_dists > 2:
+                    ythe, yact = {}, {}
+                    for n in range(c.num_dists):
+                        ythe[int(n)] = c.dist_values[n].ythe
+                        yact[int(n)] = c.dist_values[n].yact
+
+                    ymergedact = merge_multi_dist(c.xact, yact, c.multi_dist_weights, 1.0 / c.hr)
+                    ymergedthe = merge_multi_dist(c.xthe, ythe, c.multi_dist_weights, 1.0 / c.hr)
+                    c.effective_rtp, c.effective_pdf = calculate_act_expectation(c.xact, ymergedact, state.cost)
+                    c.merged_dist = ymergedact
+                    c.merged_dist_the = ymergedthe
 
                 st.write(f"Actual Effective RTP Target: {round((1.0/c.hr) * c.effective_rtp,5)}")
             else:
@@ -258,5 +318,11 @@ def render_target_dist_params(state: AppState):
                 c.dist_values[0] = DistributionInput("fixed_amt", [c.av], [c.av], prob, prob)
                 c.yact, c.ythe = [prob], [prob]
 
-        if len(state.opt_settings) <= i:
-            state.opt_settings.append(ConvexOptSetup(1.0, 1.0, c.xact, list(np.ones(len(x)))))
+        while len(state.opt_settings) < len(state.criteria_list):
+            state.opt_settings.append(ConvexOptSetup(1.0, 1.0, [], []))
+        state.opt_settings[i] = ConvexOptSetup(
+            1.0,
+            1.0,
+            c.xact,
+            list(np.ones(len(x))),
+        )

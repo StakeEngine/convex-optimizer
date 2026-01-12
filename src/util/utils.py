@@ -248,7 +248,7 @@ def load_mode_solution(state: AppState, mode: str, soln: int) -> None:
     state.plot_params = mode_data.plot_params
 
     for i, c in enumerate(state.criteria_list):
-        st.session_state[f"checkbox_{i}"] = c.is_2_dist
+        st.session_state[f"checkbox_{i}"] = c.multi_dist
         st.session_state[f"dist1_mix_{i}"] = c.dist1_mix
 
         for d in range(c.num_dists):

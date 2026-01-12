@@ -43,6 +43,7 @@ def assign_log_normal(
         key=f"log_mode_{i}_{d}",
         on_change=reset_optimizer_and_merge,
         args=(state,),
+        width=150,
     )
     dist_params.std = st.number_input(
         "Distribution Variance",
@@ -52,6 +53,7 @@ def assign_log_normal(
         key=f"log_var_{i}_{d}",
         on_change=reset_optimizer_and_merge,
         args=(state,),
+        width=150,
     )
 
     cc1, cc2, cc3 = st.columns(3)
@@ -115,10 +117,11 @@ def assign_gaussian(
         -10.0 * state.cost,
         1000.0 * state.cost,
         def_mean,
-        0.1 * state.cost,
+        state.cost,
         key=f"gauss_mode_{i}_{d}",
         on_change=reset_optimizer_and_merge,
         args=(state,),
+        width=150,
     )
     dist_params.std = st.number_input(
         "Distribution Standard Deviation",
@@ -129,6 +132,7 @@ def assign_gaussian(
         key=f"gauss_var_{i}_{d}",
         on_change=reset_optimizer_and_merge,
         args=(state,),
+        width=150,
     )
     cc1, cc2, cc3 = st.columns(3)
     with cc1:
@@ -186,6 +190,7 @@ def assign_exponential(
         format="%f",
         on_change=reset_optimizer_and_merge,
         args=(state,),
+        width=150,
     )
     cc1, cc2, cc3 = st.columns(3)
     with cc1:
@@ -246,6 +251,7 @@ def assign_quadratic(
             format="%e",
             on_change=reset_optimizer_and_merge,
             args=(state,),
+            width=150,
         )
         dist_params.lin_coef = st.number_input(
             "Linear Coefficient",
@@ -257,6 +263,7 @@ def assign_quadratic(
             format="%e",
             on_change=reset_optimizer_and_merge,
             args=(state,),
+            width=150,
         )
     cc1, cc2, cc3 = st.columns(3)  # save these to state to reload
     with cc1:
@@ -316,6 +323,7 @@ def assign_linear(
             format="%e",
             on_change=reset_optimizer_and_merge,
             args=(state,),
+            width=150,
         )
     cc1, cc2, cc3 = st.columns(3)  # save these to state to reload
     with cc1:
@@ -362,6 +370,7 @@ def assign_rect(state: AppState, dist_params: RectParams, criteria: CriteraParam
             format="%e",
             on_change=reset_optimizer_and_merge,
             args=(state,),
+            width=150,
         )
     cc1, cc2 = st.columns(2)  # save these to state to reload
     with cc1:
