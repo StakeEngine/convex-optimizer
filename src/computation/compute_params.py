@@ -214,22 +214,40 @@ def render_target_dist_params(state: AppState):
                 )
 
                 if c.multi_dist:
-                    c.num_dists = st.number_input("Distribution Count", 2, 5, 2, 1, width=150)
+                    c.num_dists = st.number_input(
+                        "Distribution Count", 2, 5, 2, 1, width=150, key=f"dists_used_{i}"
+                    )
                     if c.num_dists == 2:
                         c.dist1_mix = st.number_input(
                             "Dist 1 Weight Factor", 0.0, 1.0, value=0.5, step=0.1, key=f"dist1_mix_{i}", width=150
                         )
                         c.dist2_mix = 1.0 - c.dist1_mix
+                        st.write(f"Dist 2 Weight: {c.dist2_mix}")
                     elif c.num_dists > 2:
-                        if f"multi_dist_weights_{i}" not in st.session_state:
-                            st.session_state[f"multi_dist_weights_{i}"] = [0 for _ in range(c.num_dists)]
-                        c.multi_dist_weights = [0 for _ in range(c.num_dists)]
-                        for j in range(c.num_dists):
-                            c.multi_dist_weights[j] = st.number_input(f"Dist {j} weight", 0.0, 100.0, 0.5)
+                        key = f"multi_dist_weights_{i}"
+                        st.session_state[key] = [0.5] * c.num_dists
+
+                        c.multi_dist_weights = st.session_state[key]
+                        for start in range(0, c.num_dists, 3):
+                            cols = st.columns(3)
+                            for j in range(3):
+                                idx = start + j
+                                if idx >= c.num_dists:
+                                    break
+
+                                with cols[j]:
+                                    c.multi_dist_weights[idx] = st.number_input(
+                                        f"Dist {idx+1} weight",
+                                        min_value=0.0,
+                                        max_value=100.0,
+                                        value=0.5,
+                                        width=100,
+                                        key=f"dist_weight_{i}_{idx}",
+                                    )
                         tw = sum(c.multi_dist_weights)
-                        c.multi_dist_weights = [x / tw for x in c.multi_dist_weights]  # normalize
-                else:
-                    c.num_dists = 1
+                        c.multi_dist_weights = [x / tw for x in c.multi_dist_weights]
+                    else:
+                        c.num_dists = 1
 
                 for d in range(c.num_dists):
                     c.dist_type[d] = st.selectbox(

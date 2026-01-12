@@ -71,8 +71,9 @@ def render_plots(state: AppState):
                     c.xact,
                     yact,
                     marker="x",
-                    linestyle="-",
-                    linewidth=1.2,
+                    markersize=6,
+                    linestyle="--",
+                    linewidth=1.8,
                     color="black",
                     label="Combined",
                 )
@@ -100,16 +101,22 @@ def render_plots(state: AppState):
                 )
 
             ax.set_xlim(plot_params.xmin, plot_params.xmax)
-            ax.set_xlabel("Payout")
-            ax.set_ylabel("Probability")
+            ax.set_xlabel("Payout Multiplier", size=11)
+            ax.set_ylabel("Probability of Payout", size=11)
+            xmin, xmax = ax.get_xlim()
+            ymins, ymaxs = [], []
 
-            if plot_params.log_scale:
-                xmin = max(plot_params.xmin, 0.1)
-                ax.set_xlim(xmin, plot_params.xmax)
-                ax.set_xscale("log")
-            else:
-                ax.set_xlim(plot_params.xmin, plot_params.xmax)
+            for line in ax.lines:
+                x = np.asarray(line.get_xdata())
+                y = np.asarray(line.get_ydata())
+                mask = (x >= xmin) & (x <= xmax)
+                if mask.any():
+                    ymins.append(y[mask].min())
+                    ymaxs.append(y[mask].max())
 
+            ymin, ymax = min(ymins), max(ymaxs)
+            pad = 0.05 * (ymax - ymin) if ymax > ymin else ymax * 0.1
+            ax.set_ylim(max(0, ymin - pad), ymax + pad)
             ax.grid(True, alpha=0.25)
             ax.legend(frameon=False, ncol=2)
             fig.tight_layout()
