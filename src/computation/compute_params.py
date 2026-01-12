@@ -114,7 +114,7 @@ def render_compute_params(state: AppState):
             st.write(
                 f"Game Info: \n\nLookup length: {summaryObj.lookup_length} \n\nNum Zero-IDs: {summaryObj.zero_id_len}"
             )
-            st.warning(f"{len(remaining_sim_ids)} non-zero ids without matching criteria!")
+            st.warning(f"{len(remaining_sim_ids)} non-zero (unused) ids without matching criteria")
         for i, o in enumerate(state.dist_objects):
             st.space()
             with st.container():
@@ -169,9 +169,7 @@ def ensure_dist_params(c, d):
     cls = DIST_PARAM_CLASSES[dist_type]
 
     attr = f"dist{d}_params"
-
     params = getattr(c, attr, None)
-
     if params is None:
         params = cls()
         setattr(c, attr, params)
@@ -191,7 +189,6 @@ def ensure_dist_params(c, d):
 
 
 def render_target_dist_params(state: AppState):
-    st.write(len(state.criteria_list))
     for i, c in enumerate(state.criteria_list):
         if any([c.rtp is None, c.hr is None, c.av is None]):
             c.rtp, c.hr, c.av = calculate_params(c.rtp, c.hr, c.av, state.cost)
@@ -217,15 +214,10 @@ def render_target_dist_params(state: AppState):
                 )
 
                 if c.multi_dist:
-                    c.num_dists = st.number_input("Distribution Count", 2, 5, 2, 1)
+                    c.num_dists = st.number_input("Distribution Count", 2, 5, 2, 1, width=150)
                     if c.num_dists == 2:
                         c.dist1_mix = st.number_input(
-                            "Dist 1 Weight Factor",
-                            0.0,
-                            1.0,
-                            value=0.5,
-                            step=0.1,
-                            key=f"dist1_mix_{i}",
+                            "Dist 1 Weight Factor", 0.0, 1.0, value=0.5, step=0.1, key=f"dist1_mix_{i}", width=150
                         )
                         c.dist2_mix = 1.0 - c.dist1_mix
                     elif c.num_dists > 2:
@@ -240,12 +232,13 @@ def render_target_dist_params(state: AppState):
                     c.num_dists = 1
 
                 for d in range(c.num_dists):
-                    c.dist_type[d] = st.radio(
-                        "Distribution Type",
+                    c.dist_type[d] = st.selectbox(
+                        "Function Type",
                         list(DIST_PARAM_CLASSES.keys()),
                         key=f"dist_type_{i}_{d}",
                         on_change=reset_optimizer_and_merge,
                         args=(state,),
+                        width=150,
                     )
                     dist_params = ensure_dist_params(c, d)
 
@@ -291,7 +284,7 @@ def render_target_dist_params(state: AppState):
                     for n in range(c.num_dists):
                         ythe[int(n)] = c.dist_values[n].ythe
                         yact[int(n)] = c.dist_values[n].yact
-                    st.write(c.multi_dist_weights)
+
                     ymergedact = merge_multi_dist(c.xact, yact, c.multi_dist_weights, 1.0 / c.hr)
                     ymergedthe = merge_multi_dist(c.xthe, ythe, c.multi_dist_weights, 1.0 / c.hr)
                     c.effective_rtp, c.effective_pdf = calculate_act_expectation(c.xact, ymergedact, state.cost)
