@@ -71,7 +71,7 @@ def assign_log_normal(
     dist_params.mean = calculate_mu_from_mode(dist_params.mode, dist_params.std)
     dist_params.the_exp = calculate_theoretical_expectation(dist_params.mode, dist_params.std)
 
-    st.text(f"Target Mean: {round(dist_params.the_exp *(1.0 / criteria.hr) ,3)}")
+    # st.text(f"Target Mean: {round(dist_params.the_exp *(1.0 / criteria.hr) ,3)}")
 
     # compute the probability distribution
     ythe = get_log_normal_pdf(
@@ -359,7 +359,7 @@ def assign_linear(
 
 def assign_rect(state: AppState, dist_params: RectParams, criteria: CriteraParams, i: int, d: int) -> list[list]:
 
-    dist_params.normalized = st.checkbox("Normalize", False, key="rect_norm")
+    dist_params.normalized = st.checkbox("Normalize", False, key=f"rect_norm_{i}_{d}")
     if not dist_params.normalized:
         dist_params.height = st.number_input(
             "Scale Coefficient",

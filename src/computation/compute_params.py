@@ -314,7 +314,7 @@ def render_target_dist_params(state: AppState):
                 st.write(
                     f"Criteria [{c.name}] has only 1 average win amount [{state.dist_objects[i].unique_payouts[0]}]"
                 )
-                prob = (1.0 / c.hr) / state.cost
+                prob = 1.0 / c.hr
                 c.dist_values[0] = DistributionInput("fixed_amt", [c.av], [c.av], prob, prob)
                 c.yact, c.ythe = [prob], [prob]
 
