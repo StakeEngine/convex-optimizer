@@ -105,7 +105,7 @@ def calculate_act_expectation(actual_payouts, pdf, cost=1):
 def get_quadratic_pdf(payouts, scale, quad, lin, xmin, xmax, offset, normalize_curve=False):
     x = np.asarray(payouts, float)
 
-    pdf = (quad * (x**2)) + (lin * x) + offset
+    pdf = (quad * ((x - offset) ** 2)) + (lin * (x - offset))  # + offset
 
     mask = (x >= xmin) & (x <= xmax)
     pdf *= mask
