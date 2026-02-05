@@ -134,7 +134,7 @@ def merge_solutions(state: AppState):
 
         for sim, pay in zip(state.dist_objects[i].book_ids, state.dist_objects[i].payouts):
             w = d.optimized_final_distribution[pay]
-            final_lookup.append((sim, w, int(pay * 100)))
+            final_lookup.append((sim, w, round(pay * 100)))
             sanity_rtp += pay * w
             cumulative_prob += w
 
