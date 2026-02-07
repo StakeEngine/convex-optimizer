@@ -137,7 +137,7 @@ class AppState:
     all_payout_ints: list[int] = field(default_factory=list)
     zero_prob: float = 1.0
     lookup_length: int = 0
-    book_offset = 1
+    book_offset = 0
     max_payout: float = 0.0
     weight_scale: int = field(default=50)
 

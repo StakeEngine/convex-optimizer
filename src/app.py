@@ -8,7 +8,14 @@ from src.computation.optimizer import (
     merge_solutions,
     render_optimizer_results,
 )
-from src.util.utils import write_optimized_lookup, print_optimized_hr_table, save_mode_solution, load_mode_solution
+from src.util.utils import (
+    write_optimized_lookup,
+    print_optimized_hr_table,
+    save_mode_solution,
+    load_mode_solution,
+    verify_lookup_soln,
+    get_optimizer_name,
+)
 from src.data.plotting import render_plots
 
 
@@ -84,6 +91,8 @@ if len(state.hr_ranges) > 0:
 
 if state.write_data:
     write_optimized_lookup(state)
+    solnpath, _ = get_optimizer_name(state, False)
+    verify_lookup_soln(state.lut_file, solnpath)
 
 if state.pickle_data:
     save_mode_solution(state)
