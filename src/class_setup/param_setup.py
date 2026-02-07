@@ -6,7 +6,7 @@ from src.util.utils import calculate_params
 
 def render_mode_editor(state: AppState):
 
-    mde, cst, step, zero_criteria = st.columns(4)
+    mde, cst, step, zero_criteria, offset = st.columns(5)
     with mde:
         state.mode = st.text_input("Game Mode", key="gmode", value="base", width=150)
     with cst:
@@ -15,6 +15,8 @@ def render_mode_editor(state: AppState):
         state.win_step_size = st.number_input("Win Step Size", 0.0, 100.0, 0.1, width=80)
     with zero_criteria:
         state.mode_contains_zero_criteria = st.checkbox("'0' Criteria?", True, "contains_zero_criteria")
+    with offset:
+        state.book_offset = int(st.number_input("Sim Index Offset", 0, 999999, 0, width=100))
 
     indir, outdir = st.columns(2)
     with indir:

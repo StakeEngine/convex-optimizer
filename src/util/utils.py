@@ -137,7 +137,7 @@ def calculate_params(rtp: float | None, hr: float | None, av_win: float | None, 
     return rtp, hr, av_win
 
 
-def get_optimizer_name(state: AppState) -> list[str]:
+def get_optimizer_name(state: AppState, increment_index: bool = True) -> list[str]:
     output_dir = Path(state.root_dir) / state.out_dir
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -152,7 +152,10 @@ def get_optimizer_name(state: AppState) -> list[str]:
             except ValueError:
                 pass
 
-    next_idx = max(indices, default=0) + 1
+    if increment_index:
+        next_idx = max(indices, default=0) + 1
+    else:
+        next_idx = max(indices, default=0)
 
     output_lut = output_dir / f"{prefix}{next_idx}.csv"
     output_hr = output_dir / f"combined_hitrates_{state.mode}_{next_idx}.json"
@@ -295,3 +298,19 @@ def load_mode_solution(state: AppState, mode: str, soln: int) -> None:
                     st.session_state["rect_norm"] = params.normalized
 
     st.rerun()
+
+
+def verify_lookup_soln(init_file: str, out_file: str):
+    mismatch_found = False
+    with open(init_file, "r", encoding="utf-8") as f1, open(out_file, "r", encoding="utf-8") as f2:
+        for l1, l2 in zip(f1, f2):
+            i1, _, p1 = l1.strip().split(",")
+            i2, _, p2 = l2.strip().split(",")
+            i1, p1 = int(i1), int(p1)
+            i2, p2 = int(i2), int(p2)
+            if any([i1 != i2, p1 != p2]):
+                mismatch_found = True
+                raise RuntimeError(f"Index/Pay Mismatch: i1:{i1}, i2:{i2}\np1:{p1}, p2:{p2}")
+
+    if not (mismatch_found):
+        print("File index and payouts match for both files.")
