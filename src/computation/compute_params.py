@@ -66,10 +66,11 @@ def render_compute_params(state: AppState):
 
         state.zero_prob -= sum(1.0 / c.hr for c in state.criteria_list)
 
+    all_criteria_names = [o.criteria for o in state.dist_objects]
     for i, o in enumerate(state.dist_objects):
         # extract book ids
         if not o.book_ids:
-            o.book_ids, o.payouts, state.lookup_length, state.zero_ids = extract_ids(state, o.criteria)
+            o.book_ids, o.payouts, state.lookup_length, state.zero_ids = extract_ids(state, o.criteria, all_criteria_names)
             if summaryObj.zero_id_len is None or summaryObj.lookup_length is None:
                 summaryObj.zero_id_len = len(state.zero_ids)
                 summaryObj.lookup_length = state.lookup_length

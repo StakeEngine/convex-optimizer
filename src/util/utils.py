@@ -33,7 +33,7 @@ DIST_PARAM_CLASSES: dict[DistType, Type] = {
 }
 
 
-def extract_ids(state: AppState, target_string: str):
+def extract_ids(state: AppState, target_string: str, all_criteria: list[str] = None):
     ids = []
     pays = []
     zero_ids = []
@@ -48,7 +48,8 @@ def extract_ids(state: AppState, target_string: str):
                 ids.append(int(book))
                 pays.append(tot)
             elif tot == 0 and state.mode_contains_zero_criteria:
-                zero_ids.append(int(book))
+                if all_criteria is None or not any(criteria.lower() == c.lower() for c in all_criteria):
+                    zero_ids.append(int(book))
 
     return ids, pays, total_lookup_length, zero_ids
 
@@ -314,3 +315,10 @@ def verify_lookup_soln(init_file: str, out_file: str):
 
     if not (mismatch_found):
         print("File index and payouts match for both files.")
+
+
+if __name__ == "__main__":
+    f1 = "src/output_files/optimized_base_7.csv"
+    f2 = "src/input_files/lookUpTable_base.csv"
+
+    verify_lookup_soln(f1, f2)
